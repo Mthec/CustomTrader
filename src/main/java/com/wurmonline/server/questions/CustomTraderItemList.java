@@ -83,7 +83,7 @@ public class CustomTraderItemList extends CustomTraderQuestionExtension {
                              .If(tag.isEmpty(),
                                   b -> b.text(trader.getName() + "'s item list."),
                                   b -> b.text("Item list for traders with tag '" + tag + "'."))
-                             .table(new String[] { "Item", "QL", "Price", "Enchants", "Max.", "Rate", "Interval", "Remove?" }, Arrays.asList(stock),
+                             .table(new String[] { "Item", "QL", "Price", "Weight", "Enchants", "Max.", "Rate", "Interval", "Remove?" }, Arrays.asList(stock),
                                      (item, b) -> {
                                      ItemTemplate template;
                                      try {
@@ -100,6 +100,7 @@ public class CustomTraderItemList extends CustomTraderQuestionExtension {
                                      return b.label(sb.toString())
                                              .label(df.format(item.item.ql))
                                              .label(new Change(item.item.price).getChangeShortString())
+                                             .label(WeightHelper.toString(item.item.weight))
                                              .label(String.valueOf(item.item.enchantments.length))
                                              .label(String.valueOf(item.maxNum))
                                              .label((item.restockInterval == 0) ? "N/A" : String.valueOf(item.restockRate))

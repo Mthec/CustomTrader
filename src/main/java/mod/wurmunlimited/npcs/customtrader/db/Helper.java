@@ -13,7 +13,7 @@ public class Helper {
         Item inventory = trader.getInventory();
         Map<StockItem, Integer> items = new HashMap<>();
         for (Item item : inventory.getItems()) {
-            StockItem stock = new StockItem(item.getTemplateId(), item.getQualityLevel(), item.getPrice(), item.getMaterial(), item.getRarity(), Enchantment.parseEnchantments(item));
+            StockItem stock = new StockItem(item.getTemplateId(), item.getQualityLevel(), item.getPrice(), item.getMaterial(), item.getRarity(), item.getWeightGrams(), Enchantment.parseEnchantments(item));
             items.merge(stock, 1, Integer::sum);
         }
 

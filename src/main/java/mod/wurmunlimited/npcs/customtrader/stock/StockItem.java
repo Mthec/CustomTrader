@@ -10,14 +10,16 @@ public class StockItem {
     public final int price;
     public final byte material;
     public final byte rarity;
+    public final int weight;
     public final Enchantment[] enchantments;
 
-    public StockItem(int templateId, float ql, int price, byte material, byte rarity, Enchantment[] enchantments) {
+    public StockItem(int templateId, float ql, int price, byte material, byte rarity, int weight, Enchantment[] enchantments) {
         this.templateId = templateId;
         this.ql = ql;
         this.price = price;
         this.material = material;
         this.rarity = rarity;
+        this.weight = weight;
         this.enchantments = enchantments;
     }
 
@@ -26,6 +28,7 @@ public class StockItem {
                        item.getQualityLevel() == ql &&
                        item.getMaterial() == material &&
                        item.getRarity() == rarity &&
+                       item.getWeightGrams() == weight &&
                        Arrays.equals(Enchantment.parseEnchantments(item), enchantments);
     }
 
@@ -37,6 +40,7 @@ public class StockItem {
         result = 31 * result + price;
         result = 31 * result + (int)material;
         result = 31 * result + (int)rarity;
+        result = 31 * result + weight;
         result = 31 * result + Arrays.hashCode(enchantments);
 
         return result;
@@ -51,6 +55,7 @@ public class StockItem {
                    item.price == price &&
                    item.material == material &&
                    item.rarity == rarity &&
+                   item.weight == weight &&
                    Arrays.equals(item.enchantments, enchantments);
         }
 

@@ -2,8 +2,6 @@ package com.wurmonline.server.creatures;
 
 import com.wurmonline.server.economy.Economy;
 import com.wurmonline.server.items.Item;
-import com.wurmonline.server.items.ItemFactory;
-import com.wurmonline.server.items.ItemsPackageFactory;
 import com.wurmonline.server.items.Trade;
 import com.wurmonline.server.players.Player;
 import mod.wurmunlimited.npcs.customtrader.CustomTraderMod;
@@ -13,7 +11,6 @@ import mod.wurmunlimited.npcs.customtrader.stock.Enchantment;
 import org.gotti.wurmunlimited.modloader.ReflectionUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.lang.reflect.InvocationTargetException;
@@ -39,7 +36,7 @@ public class CustomTraderTradeHandlerTests extends CustomTraderTest {
         player = factory.createNewPlayer();
         trader = factory.createNewCustomTrader();
         assert trader.getShop() != null;
-        CustomTraderDatabase.addStockItemTo(trader, 5, 5, 5, (byte)0, (byte)0, new Enchantment[0], 5, 5, 0);
+        CustomTraderDatabase.addStockItemTo(trader, 5, 5, 5, (byte)0, (byte)0, 5, new Enchantment[0], 5, 5, 0);
         CustomTraderDatabase.restock(trader);
         trade = new Trade(player, trader);
         player.setTrade(trade);
@@ -185,7 +182,7 @@ public class CustomTraderTradeHandlerTests extends CustomTraderTest {
     @Test
     void testTradeDoesNotRestock() throws CustomTraderDatabase.StockUpdateException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         CustomTraderDatabase.deleteAllStockFor(trader);
-        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 1, (byte)0, (byte)2, new Enchantment[0], 1, 0, 100);
+        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 1, (byte)0, (byte)2, 1, new Enchantment[0], 1, 0, 100);
         CustomTraderDatabase.fullyStock(trader);
         assert trader.getInventory().getItems().size() == 1;
 

@@ -134,23 +134,28 @@ public class CustomTraderMod implements WurmServerMod, PreInitable, Initable, Se
         return handler;
     }
 
-    // TODO - Test.
     Object creatureCreation(Object o, Method method, Object[] args) throws InvocationTargetException, IllegalAccessException, NoSuchFieldException {
-        CreatureCreationQuestion question = (CreatureCreationQuestion)o;
+        CreatureCreationQuestion question = (CreatureCreationQuestion)args[0];
         Properties answers = ReflectionUtil.getPrivateField(question, Question.class.getDeclaredField("answer"));
         try {
-            int templateIndex = Integer.parseInt(answers.getProperty("data1"));
-            List<CreatureTemplate> templates = ReflectionUtil.getPrivateField(question, CreatureCreationQuestion.class.getDeclaredField("cretemplates"));
-            CreatureTemplate template = templates.get(templateIndex);
+            String templateIndexString = answers.getProperty("data1");
+            String name = answers.getProperty("cname");
+            if (name == null)
+                answers.setProperty("name", "");
+            else
+                answers.setProperty("name", name);
+            if (templateIndexString != null) {
+                int templateIndex = Integer.parseInt(templateIndexString);
+                List<CreatureTemplate> templates = ReflectionUtil.getPrivateField(question, CreatureCreationQuestion.class.getDeclaredField("cretemplates"));
+                CreatureTemplate template = templates.get(templateIndex);
 
-            if (CustomTraderTemplate.isCustomTrader(template)) {
-                Creature responder = question.getResponder();
-                int floorLevel = responder.getFloorLevel();
-                VolaTile tile = Zones.getTileOrNull(question.getTileX(), question.getTileY(), responder.isOnSurface());
-                Properties properties = new Properties();
-                properties.setProperty("gender", (new Random().nextBoolean()) ? "male" : "female");
-                new PlaceCustomTraderQuestion(responder, tile, floorLevel).answer(properties);
-                return null;
+                if (CustomTraderTemplate.isCustomTrader(template)) {
+                    Creature responder = question.getResponder();
+                    int floorLevel = responder.getFloorLevel();
+                    VolaTile tile = Zones.getOrCreateTile(question.getTileX(), question.getTileY(), responder.isOnSurface());
+                    new PlaceCustomTraderQuestion(responder, tile, floorLevel).answer(answers);
+                    return null;
+                }
             }
         } catch (NumberFormatException | IndexOutOfBoundsException e) {
             question.getResponder().getCommunicator().sendAlertServerMessage("An error occurred in the rifts of the void. The trader was not created.");

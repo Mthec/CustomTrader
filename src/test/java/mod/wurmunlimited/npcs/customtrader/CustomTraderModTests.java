@@ -1,21 +1,27 @@
 package mod.wurmunlimited.npcs.customtrader;
 
 import com.wurmonline.server.creatures.Creature;
+import com.wurmonline.server.creatures.CreatureTemplate;
 import com.wurmonline.server.creatures.CustomTraderTradeHandler;
-import com.wurmonline.server.creatures.TradeHandler;
+import com.wurmonline.server.items.Item;
+import com.wurmonline.server.items.ItemList;
 import com.wurmonline.server.items.Trade;
+import com.wurmonline.server.players.Player;
+import com.wurmonline.server.questions.CreatureCreationQuestion;
+import com.wurmonline.server.questions.Question;
 import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
 import mod.wurmunlimited.npcs.customtrader.stock.Enchantment;
+import org.gotti.wurmunlimited.modloader.ReflectionUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.Iterator;
+import java.util.List;
+import java.util.Properties;
 
+import static mod.wurmunlimited.Assert.didNotReceiveMessageContaining;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -36,7 +42,7 @@ public class CustomTraderModTests extends CustomTraderTest {
 
     @Test
     void testPollAlive() throws Throwable {
-        CustomTraderDatabase.addStockItemTo(customTrader, num, num, num, b, b, new Enchantment[0], num, num, 0);
+        CustomTraderDatabase.addStockItemTo(customTrader, num, num, num, b, b, num, new Enchantment[0], num, num, 0);
 
         InvocationHandler handler = new CustomTraderMod()::poll;
         Method method = mock(Method.class);
@@ -55,7 +61,7 @@ public class CustomTraderModTests extends CustomTraderTest {
 
     @Test
     void testPollDead() throws Throwable {
-        CustomTraderDatabase.addStockItemTo(customTrader, num, num, num, b, b, new Enchantment[0], num, num, 0);
+        CustomTraderDatabase.addStockItemTo(customTrader, num, num, num, b, b, num, new Enchantment[0], num, num, 0);
 
         InvocationHandler handler = new CustomTraderMod()::poll;
         Method method = mock(Method.class);
@@ -74,7 +80,7 @@ public class CustomTraderModTests extends CustomTraderTest {
 
     @Test
     void testMakeTradeComplete() throws Throwable {
-        CustomTraderDatabase.addStockItemTo(customTrader, num, num, num, b, b, new Enchantment[0], num, num, 0);
+        CustomTraderDatabase.addStockItemTo(customTrader, num, num, num, b, b, num, new Enchantment[0], num, num, 0);
         customTrader.getShop().setMoney(100);
         normalTrader.getShop().setMoney(100);
 
@@ -99,7 +105,7 @@ public class CustomTraderModTests extends CustomTraderTest {
 
     @Test
     void testMakeTradeNotComplete() throws Throwable {
-        CustomTraderDatabase.addStockItemTo(customTrader, num, num, num, b, b, new Enchantment[0], num, num, 0);
+        CustomTraderDatabase.addStockItemTo(customTrader, num, num, num, b, b, num, new Enchantment[0], num, num, 0);
         customTrader.getShop().setMoney(100);
         normalTrader.getShop().setMoney(100);
 
@@ -124,7 +130,7 @@ public class CustomTraderModTests extends CustomTraderTest {
 
     @Test
     void testGetTradeHandler() throws Throwable {
-        CustomTraderDatabase.addStockItemTo(customTrader, num, num, num, b, b, new Enchantment[0], num, num, 0);
+        CustomTraderDatabase.addStockItemTo(customTrader, num, num, num, b, b, num, new Enchantment[0], num, num, 0);
         customTrader.getShop().setMoney(100);
         normalTrader.getShop().setMoney(100);
 
@@ -140,5 +146,78 @@ public class CustomTraderModTests extends CustomTraderTest {
 
         assertNull(handler.invoke(normalTrader, method, args));
         verify(method, times(1)).invoke(normalTrader, args);
+    }
+
+    @Test
+    void testCreatureCreation() throws Throwable {
+        Player gm = factory.createNewPlayer();
+        Item wand = factory.createNewItem(ItemList.wandGM);
+        String name = "Name";
+        int tileX = 250;
+        int tileY = 250;
+        int templateId = ReflectionUtil.getPrivateField(null, CustomTraderTemplate.class.getDeclaredField("templateId"));
+
+        InvocationHandler handler = new CustomTraderMod()::creatureCreation;
+        Method method = mock(Method.class);
+        Object[] args = new Object[] { new CreatureCreationQuestion(gm, "", "", wand.getWurmId(), tileX, tileY, -1, -10)};
+        ((CreatureCreationQuestion)args[0]).sendQuestion();
+        int templateIndex = -1;
+        int i = 0;
+        //noinspection unchecked
+        for (CreatureTemplate template : ((List<CreatureTemplate>)ReflectionUtil.getPrivateField(args[0], CreatureCreationQuestion.class.getDeclaredField("cretemplates")))) {
+            if (template.getTemplateId() == templateId) {
+                templateIndex = i;
+                break;
+            }
+            ++i;
+        }
+        assert templateIndex != -1;
+        Properties answers = new Properties();
+        answers.setProperty("data1", String.valueOf(i));
+        answers.setProperty("cname", name);
+        answers.setProperty("gender", "female");
+        ReflectionUtil.setPrivateField(args[0], Question.class.getDeclaredField("answer"), answers);
+
+        for (Creature creature : factory.getAllCreatures().toArray(new Creature[0])) {
+            factory.removeCreature(creature);
+        }
+        assert factory.getAllCreatures().size() == 0;
+
+        assertNull(handler.invoke(null, method, args));
+        verify(method, never()).invoke(null, args);
+        assertEquals(1, factory.getAllCreatures().size());
+        Creature customTrader = factory.getAllCreatures().iterator().next();
+        assertEquals("Trader_" + name, customTrader.getName());
+        assertEquals((byte)1, customTrader.getSex());
+        assertEquals(gm.isOnSurface(), customTrader.isOnSurface());
+        assertEquals(0, customTrader.getInventory().getItems().size());
+        assertThat(gm, didNotReceiveMessageContaining("An error occurred"));
+    }
+
+    @Test
+    void testNonCustomTraderCreatureCreation() throws Throwable {
+        Player gm = factory.createNewPlayer();
+        Item wand = factory.createNewItem(ItemList.wandGM);
+        int tileX = 250;
+        int tileY = 250;
+
+        InvocationHandler handler = new CustomTraderMod()::creatureCreation;
+        Method method = mock(Method.class);
+        Object[] args = new Object[] { new CreatureCreationQuestion(gm, "", "", wand.getWurmId(), tileX, tileY, -1, -10)};
+        ((CreatureCreationQuestion)args[0]).sendQuestion();
+        Properties answers = new Properties();
+        answers.setProperty("data1", String.valueOf(0));
+        answers.setProperty("cname", "MyName");
+        answers.setProperty("gender", "female");
+        ReflectionUtil.setPrivateField(args[0], Question.class.getDeclaredField("answer"), answers);
+
+        for (Creature creature : factory.getAllCreatures().toArray(new Creature[0])) {
+            factory.removeCreature(creature);
+        }
+
+        assertNull(handler.invoke(null, method, args));
+        verify(method, times(1)).invoke(null, args);
+        assertEquals(0, factory.getAllCreatures().size());
+        assertThat(gm, didNotReceiveMessageContaining("An error occurred"));
     }
 }

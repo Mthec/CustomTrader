@@ -51,7 +51,7 @@ public class CustomTraderItemsConfigurationQuestionTests extends CustomTraderTes
                 ReflectionUtil.setPrivateField(question, CustomTraderItemsConfigurationQuestion.class.getDeclaredField("template"), template);
                 EligibleMaterials materials = new EligibleMaterials(template.itemTemplate);
                 ReflectionUtil.setPrivateField(question, CustomTraderItemsConfigurationQuestion.class.getDeclaredField("materials"), materials);
-                ReflectionUtil.setPrivateField(question, CustomTraderItemsConfigurationQuestion.class.getDeclaredField("details"), Details._default(materials.getIndexOf(template.itemTemplate.getMaterial())));
+                ReflectionUtil.setPrivateField(question, CustomTraderItemsConfigurationQuestion.class.getDeclaredField("details"), Details._default(materials.getIndexOf(template.itemTemplate.getMaterial()), template.itemTemplate.getWeightGrams()));
             }
             return question;
         } catch (NoSuchFieldException | IllegalAccessException e) {
@@ -65,6 +65,7 @@ public class CustomTraderItemsConfigurationQuestionTests extends CustomTraderTes
         properties.setProperty("mat", "4");
         properties.setProperty("rarity", "0");
         properties.setProperty("price", "1");
+        properties.setProperty("weight", "1.2");
         return properties;
     }
 
@@ -83,6 +84,7 @@ public class CustomTraderItemsConfigurationQuestionTests extends CustomTraderTes
         assertEquals(ItemMaterials.MATERIAL_IRON, item.material);
         assertEquals((byte)0, item.rarity);
         assertEquals(1, item.price);
+        assertEquals(1200, item.weight);
         assertEquals(0, info.restockRate);
         assertEquals(1, info.restockInterval);
         assertEquals(1, info.maxNum);
@@ -364,7 +366,7 @@ public class CustomTraderItemsConfigurationQuestionTests extends CustomTraderTes
     void testDETAILSZeroPriceReshowsQuestion() {
         Properties answers = getCorrectDetails();
         answers.setProperty("price", "0");
-        answers.setProperty("END", "true");
+        answers.setProperty("RESTOCKING", "true");
         CustomTraderItemsConfigurationQuestion question = getQuestionAtStage(DETAILS);
         question.sendQuestion();
         question.answer(answers);
@@ -378,7 +380,7 @@ public class CustomTraderItemsConfigurationQuestionTests extends CustomTraderTes
     void testDETAILSInvalidPriceReshowsQuestion() {
         Properties answers = getCorrectDetails();
         answers.setProperty("price", "abc");
-        answers.setProperty("END", "true");
+        answers.setProperty("RESTOCKING", "true");
         CustomTraderItemsConfigurationQuestion question = getQuestionAtStage(DETAILS);
         question.sendQuestion();
         question.answer(answers);
@@ -392,7 +394,7 @@ public class CustomTraderItemsConfigurationQuestionTests extends CustomTraderTes
     void testDETAILSMissingPriceReshowsQuestion() {
         Properties answers = getCorrectDetails();
         answers.remove("price");
-        answers.setProperty("END", "true");
+        answers.setProperty("RESTOCKING", "true");
         CustomTraderItemsConfigurationQuestion question = getQuestionAtStage(DETAILS);
         question.sendQuestion();
         assertDoesNotThrow(() -> question.answer(answers));
@@ -406,7 +408,7 @@ public class CustomTraderItemsConfigurationQuestionTests extends CustomTraderTes
     void testDETAILSEmptyPriceReshowsQuestion() {
         Properties answers = getCorrectDetails();
         answers.setProperty("price", "");
-        answers.setProperty("END", "true");
+        answers.setProperty("RESTOCKING", "true");
         CustomTraderItemsConfigurationQuestion question = getQuestionAtStage(DETAILS);
         question.sendQuestion();
         question.answer(answers);
@@ -414,6 +416,64 @@ public class CustomTraderItemsConfigurationQuestionTests extends CustomTraderTes
         assertEquals(2, factory.getCommunicator(gm).getBml().length);
         assertThat(gm, bmlEqual());
         assertThat(gm, receivedMessageContaining("Price was empty"));
+    }
+
+    @Test
+    void testDETAILSZeroWeightReshowsQuestion() {
+        Properties answers = getCorrectDetails();
+        answers.setProperty("weight", "0");
+        answers.setProperty("RESTOCKING", "true");
+        CustomTraderItemsConfigurationQuestion question = getQuestionAtStage(DETAILS);
+        question.sendQuestion();
+        question.answer(answers);
+
+        assertEquals(2, factory.getCommunicator(gm).getBml().length);
+        assertThat(gm, bmlEqual());
+        assertThat(gm, receivedMessageContaining("Weight must be greater"));
+    }
+
+    @Test
+    void testDETAILSInvalidWeightReshowsQuestion() {
+        Properties answers = getCorrectDetails();
+        answers.setProperty("weight", "abc");
+        answers.setProperty("RESTOCKING", "true");
+        CustomTraderItemsConfigurationQuestion question = getQuestionAtStage(DETAILS);
+        question.sendQuestion();
+        question.answer(answers);
+
+        assertEquals(2, factory.getCommunicator(gm).getBml().length);
+        assertThat(gm, bmlEqual());
+        assertThat(gm, receivedMessageContaining("Weight was invalid"));
+    }
+
+    @Test
+    void testDETAILSMissingWeightReshowsQuestion() {
+        Properties answers = getCorrectDetails();
+        answers.remove("weight");
+        answers.setProperty("RESTOCKING", "true");
+        CustomTraderItemsConfigurationQuestion question = getQuestionAtStage(DETAILS);
+        question.sendQuestion();
+        assertDoesNotThrow(() -> question.answer(answers));
+
+        assertEquals(2, factory.getCommunicator(gm).getBml().length);
+        assertThat(gm, bmlEqual());
+        assertThat(gm, receivedMessageContaining("Weight was invalid"));
+    }
+
+    @Test
+    void testDETAILSEmptyWeightUsesDefault() throws NoSuchFieldException, IllegalAccessException {
+        Properties answers = getCorrectDetails();
+        answers.setProperty("weight", "");
+        answers.setProperty("RESTOCKING", "true");
+        CustomTraderItemsConfigurationQuestion question = getQuestionAtStage(DETAILS);
+        question.sendQuestion();
+        assertDoesNotThrow(() -> question.answer(answers));
+
+        assertEquals(2, factory.getCommunicator(gm).getBml().length);
+        assertThat(gm, bmlNotEqual());
+        assertThat(gm, didNotReceiveMessageContaining("Price was invalid"));
+        Details details = ReflectionUtil.getPrivateField(question, CustomTraderItemsConfigurationQuestion.class.getDeclaredField("details"));
+        assertEquals(1200, details.weight);
     }
 
     @Test

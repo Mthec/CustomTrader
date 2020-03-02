@@ -38,7 +38,7 @@ public class CustomTraderItemsConfigurationQuestion extends CustomTraderQuestion
         EligibleTemplates.init();
         template = Template._default();
         materials = new EligibleMaterials(template.itemTemplate);
-        details = Details._default(materials.getIndexOf(template.itemTemplate.getMaterial()));
+        details = Details._default(materials.getIndexOf(template.itemTemplate.getMaterial()), template.itemTemplate.getWeightGrams());
         enchantments = new Enchantments();
         restocking = Restocking._default();
     }
@@ -81,7 +81,7 @@ public class CustomTraderItemsConfigurationQuestion extends CustomTraderQuestion
                 // TODO - How can I break the link between template > material > details?
                 if (template.itemTemplate != null) {
                     materials = new EligibleMaterials(template.itemTemplate);
-                    details = new Details(details.ql, materials.getIndexOf(template.itemTemplate.getMaterial()), details.rarity, details.price);
+                    details = new Details(details.ql, materials.getIndexOf(template.itemTemplate.getMaterial()), details.rarity, details.price, template.itemTemplate.getWeightGrams());
                 } else
                     reshowStage = true;
                 break;
@@ -90,6 +90,7 @@ public class CustomTraderItemsConfigurationQuestion extends CustomTraderQuestion
                 int materialIndex = details.materialIndex;
                 byte rarity = details.rarity;
                 int price = details.price;
+                int weight = details.weight;
 
                 try {
                     String qlString = properties.getProperty("ql");
@@ -170,7 +171,31 @@ public class CustomTraderItemsConfigurationQuestion extends CustomTraderQuestion
                     reshowStage = true;
                 }
 
-                details = new Details(ql, materialIndex, rarity, price);
+                try {
+                    String weightString = properties.getProperty("weight");
+
+                    if (weightString == null) {
+                        responder.getCommunicator().sendNormalServerMessage("Weight was invalid.");
+                        reshowStage = true;
+                    } else if (weightString.isEmpty()) {
+                        weight = template.itemTemplate.getWeightGrams();
+                    } else {
+                        int newWeight = WeightHelper.toInt(weightString);
+                        if (newWeight != weight) {
+                            if (newWeight <= 0) {
+                                responder.getCommunicator().sendNormalServerMessage("Weight must be greater than 0.");
+                                reshowStage = true;
+                            } else {
+                                weight = newWeight;
+                            }
+                        }
+                    }
+                } catch (NumberFormatException e) {
+                    responder.getCommunicator().sendNormalServerMessage("Weight was invalid.");
+                    reshowStage = true;
+                }
+
+                details = new Details(ql, materialIndex, rarity, price, weight);
                 break;
             case ENCHANTMENTS:
                 int i = 0;
@@ -268,7 +293,7 @@ public class CustomTraderItemsConfigurationQuestion extends CustomTraderQuestion
                 try {
                     CustomTraderDatabase.addStockItemTo(trader, template.itemTemplate.getTemplateId(),
                             details.ql, details.price, materials.getMaterial(details.materialIndex), details.rarity,
-                            enchants.toArray(new Enchantment[0]),
+                            details.weight, enchants.toArray(new Enchantment[0]),
                             restocking.maxStock, restocking.restockRate, restocking.restockInterval);
                     responder.getCommunicator().sendNormalServerMessage(trader.getName() + " adds the new stock to their list.");
                     return;
@@ -336,7 +361,9 @@ public class CustomTraderItemsConfigurationQuestion extends CustomTraderQuestion
                                 .radio("rarity", "3", "Fantastic", details.rarity == 3).spacer()
                         )
                         .newLine()
-                        .harray(b -> b.label("Price").spacer().entry("price", Long.toString(details.price), 10).spacer().text("irons"))
+                        .harray(b -> b.label("Weight").spacer().entry("weight", WeightHelper.toString(details.weight), 10).spacer().text("kg"))
+                        .newLine()
+                        .harray(b -> b.label("Price").spacer().entry("price", Integer.toString(details.price), 10).spacer().text("irons"))
                         .newLine()
                         .harray(b -> b.button("TEMPLATE", "Back").spacer().button("RESTOCKING", "Next").spacer()
                                              .button("ENCHANTMENTS", "Enchantments").spacer().button("cancel", "Cancel"));

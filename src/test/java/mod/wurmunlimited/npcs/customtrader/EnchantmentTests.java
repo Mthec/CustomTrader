@@ -30,7 +30,7 @@ public class EnchantmentTests extends CustomTraderTest {
         for (Spell spell : Spells.getSpellsEnchantingItems()) {
             float power = ++i;
             allSpells.put(spell, power);
-            CustomTraderDatabase.addStockItemTo(trader, 1, 1, 1, (byte)0, (byte)0, new Enchantment[] {
+            CustomTraderDatabase.addStockItemTo(trader, 1, 1, 1, (byte)0, (byte)0, 1, new Enchantment[] {
                     new Enchantment(spell, power)
             }, 1, 1, 0);
         }
