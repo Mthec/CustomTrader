@@ -3,6 +3,7 @@ package mod.wurmunlimited.npcs.customtrader;
 import com.wurmonline.server.Items;
 import com.wurmonline.server.MiscConstants;
 import com.wurmonline.server.creatures.Creature;
+import com.wurmonline.server.creatures.CreatureTemplate;
 import com.wurmonline.server.economy.CustomTraderEconomy;
 import com.wurmonline.server.items.Item;
 import com.wurmonline.server.zones.VolaTile;
@@ -71,6 +72,10 @@ public class CustomTraderTemplate implements ModCreature {
 
     public static boolean isCustomTrader(Creature creature) {
         return creature.getTemplateId() == templateId;
+    }
+
+    public static boolean isCustomTrader(CreatureTemplate template) {
+        return template.getTemplateId() == templateId;
     }
 
     public static Creature createNewTrader(VolaTile tile, int floorLevel, String name, byte sex, byte kingdom, String tag) throws Exception {
