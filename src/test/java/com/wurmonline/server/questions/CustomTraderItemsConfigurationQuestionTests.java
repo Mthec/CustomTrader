@@ -2,6 +2,7 @@ package com.wurmonline.server.questions;
 
 import com.wurmonline.server.creatures.Creature;
 import com.wurmonline.server.items.ItemList;
+import com.wurmonline.server.items.ItemTemplate;
 import com.wurmonline.server.items.ItemTemplateFactory;
 import com.wurmonline.server.items.NoSuchTemplateException;
 import com.wurmonline.server.players.Player;
@@ -596,5 +597,12 @@ public class CustomTraderItemsConfigurationQuestionTests extends CustomTraderTes
         assertEquals(spell, enchantment.spell);
         assertEquals(ql, enchantment.power);
         assertThat(gm, bmlNotEqual());
+    }
+
+    @Test
+    void testEligibleMaterialsIncludesMissingWoodTypes() throws NoSuchTemplateException {
+        EligibleMaterials materials = new EligibleMaterials(ItemTemplateFactory.getInstance().getTemplate(ItemList.log));
+        assertTrue(materials.getOptions().contains(ItemMaterials.WOOD_ORANGE_MATERIAL_STRING));
+        assertTrue(materials.getOptions().contains(ItemMaterials.WOOD_LINGONBERRY_MATERIAL_STRING));
     }
 }

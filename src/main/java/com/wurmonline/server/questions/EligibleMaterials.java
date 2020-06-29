@@ -73,7 +73,11 @@ class EligibleMaterials {
     }
 
     private void init() {
-        allWood = MethodsItems.getAllNormalWoodTypes();
+        byte[] normalWood = MethodsItems.getAllNormalWoodTypes();
+        byte[] otherWood = new byte[] { ItemMaterials.MATERIAL_WOOD_ORANGE, ItemMaterials.MATERIAL_WOOD_LINGONBERRY };
+        allWood = new byte[normalWood.length + otherWood.length];
+        System.arraycopy(normalWood, 0, allWood, 0, normalWood.length);
+        System.arraycopy(otherWood, 0, allWood, normalWood.length, otherWood.length);
         woodOptions = Joiner.on(",").join(collectNames(allWood));
         allMetal = MethodsItems.getAllMetalTypes();
         metalOptions = Joiner.on(",").join(collectNames(allMetal));
