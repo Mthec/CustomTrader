@@ -14,6 +14,8 @@ import mod.wurmunlimited.npcs.customtrader.stock.Enchantment;
 import org.gotti.wurmunlimited.modloader.ReflectionUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatcher;
+import org.mockito.stubbing.Answer;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -76,6 +78,60 @@ public class CustomTraderModTests extends CustomTraderTest {
         assertEquals(true, handler.invoke(normalTrader, method, args));
         assertEquals(normalInventory, normalTrader.getInventory().getItems().size());
         verify(method, times(1)).invoke(normalTrader, args);
+    }
+
+    @Test
+    void testPollItemsOnCustomTraderPreventDecay() throws Throwable {
+        CustomTraderDatabase.addStockItemTo(customTrader, ItemList.casserole, num, num, b, b, num, new Enchantment[0], num, num, 0);
+        CustomTraderDatabase.restock(customTrader);
+
+        CustomTraderMod mod = new CustomTraderMod();
+        ReflectionUtil.setPrivateField(mod, CustomTraderMod.class.getDeclaredField("preventDecay"), true);
+        InvocationHandler handler = mod::pollOwned;
+        Method method = mock(Method.class);
+        when(method.invoke(any(Item.class), any())).thenAnswer((Answer<Boolean>)i -> {
+            Item first = ((Item)i.getArgument(0)).getFirstContainedItem();
+            if (first != null)
+                first.setDamage(50);
+            return true;
+        });
+        Object[] args = new Object[] { customTrader };
+        Object[] args2 = new Object[] { normalTrader };
+
+        assert customTrader.getInventory().getItems().size() != 0;
+        assertEquals(false, handler.invoke(customTrader.getInventory(), method, args));
+        verify(method, never()).invoke(customTrader.getInventory(), args);
+        assertEquals(0, customTrader.getInventory().getFirstContainedItem().getDamage());
+
+        assertEquals(true, handler.invoke(normalTrader.getInventory(), method, args2));
+        verify(method, times(1)).invoke(normalTrader.getInventory(), args2);
+    }
+
+    @Test
+    void testPollItemsOnCustomTraderNotPreventDecay() throws Throwable {
+        CustomTraderDatabase.addStockItemTo(customTrader, ItemList.casserole, num, num, b, b, num, new Enchantment[0], num, num, 0);
+        CustomTraderDatabase.restock(customTrader);
+
+        CustomTraderMod mod = new CustomTraderMod();
+        ReflectionUtil.setPrivateField(mod, CustomTraderMod.class.getDeclaredField("preventDecay"), false);
+        InvocationHandler handler = mod::pollOwned;
+        Method method = mock(Method.class);
+        when(method.invoke(any(Item.class), any())).thenAnswer((Answer<Boolean>)i -> {
+            Item first = ((Item)i.getArgument(0)).getFirstContainedItem();
+            if (first != null)
+                first.setDamage(50);
+            return true;
+        });
+        Object[] args = new Object[] { customTrader };
+        Object[] args2 = new Object[] { normalTrader };
+
+        assert customTrader.getInventory().getItems().size() != 0;
+        assertEquals(true, handler.invoke(customTrader.getInventory(), method, args));
+        verify(method, times(1)).invoke(customTrader.getInventory(), args);
+        assertEquals(50, customTrader.getInventory().getFirstContainedItem().getDamage());
+
+        assertEquals(true, handler.invoke(normalTrader.getInventory(), method, args2));
+        verify(method, times(1)).invoke(normalTrader.getInventory(), args2);
     }
 
     @Test

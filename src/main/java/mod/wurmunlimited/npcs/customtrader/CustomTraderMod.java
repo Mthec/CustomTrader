@@ -1,6 +1,7 @@
 package mod.wurmunlimited.npcs.customtrader;
 
 import com.wurmonline.server.Items;
+import com.wurmonline.server.WurmCalendar;
 import com.wurmonline.server.behaviours.ManageCustomTraderAction;
 import com.wurmonline.server.behaviours.PlaceCustomTraderAction;
 import com.wurmonline.server.creatures.Creature;
@@ -18,10 +19,7 @@ import javassist.*;
 import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
 import org.gotti.wurmunlimited.modloader.ReflectionUtil;
 import org.gotti.wurmunlimited.modloader.classhooks.HookManager;
-import org.gotti.wurmunlimited.modloader.interfaces.Initable;
-import org.gotti.wurmunlimited.modloader.interfaces.PreInitable;
-import org.gotti.wurmunlimited.modloader.interfaces.ServerStartedListener;
-import org.gotti.wurmunlimited.modloader.interfaces.WurmServerMod;
+import org.gotti.wurmunlimited.modloader.interfaces.*;
 import org.gotti.wurmunlimited.modsupport.actions.ModActions;
 import org.gotti.wurmunlimited.modsupport.creatures.ModCreatures;
 
@@ -30,9 +28,16 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 
-public class CustomTraderMod implements WurmServerMod, PreInitable, Initable, ServerStartedListener {
+public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable, Initable, ServerStartedListener {
     public static final int maxTagLength = 25;
     public static String namePrefix = "Trader";
+    private boolean preventDecay = true;
+
+    @Override
+    public void configure(Properties properties) {
+        String val = properties.getProperty("prevent_decay", "true");
+        preventDecay = val != null && val.equals("true");
+    }
 
     @Override
     public void preInit() {
@@ -61,6 +66,11 @@ public class CustomTraderMod implements WurmServerMod, PreInitable, Initable, Se
                 "poll",
                 "()Z",
                 () -> this::poll);
+
+        manager.registerHook("com.wurmonline.server.items.Item",
+                "pollOwned",
+                "(Lcom/wurmonline/server/creatures/Creature;)Z",
+                () -> this::pollOwned);
 
         manager.registerHook("com.wurmonline.server.items.Trade",
                 "makeTrade",
@@ -96,6 +106,21 @@ public class CustomTraderMod implements WurmServerMod, PreInitable, Initable, Se
         }
 
         return toDestroy;
+    }
+
+    Object pollOwned(Object o, Method method, Object[] args) throws InvocationTargetException, IllegalAccessException {
+        Creature creature = (Creature)args[0];
+        Item item = (Item)o;
+        if (preventDecay && CustomTraderTemplate.isCustomTrader(creature)) {
+            item.setLastMaintained(WurmCalendar.currentTime);
+            for (Item it : item.getAllItems(true)) {
+                it.setLastMaintained(WurmCalendar.currentTime);
+            }
+
+            return false;
+        } else {
+            return method.invoke(o, args);
+        }
     }
 
     Object makeTrade(Object o, Method method, Object[] args) throws InvocationTargetException, IllegalAccessException {
