@@ -14,7 +14,6 @@ import mod.wurmunlimited.npcs.customtrader.stock.Enchantment;
 import org.gotti.wurmunlimited.modloader.ReflectionUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentMatcher;
 import org.mockito.stubbing.Answer;
 
 import java.lang.reflect.InvocationHandler;
@@ -32,14 +31,14 @@ public class CustomTraderModTests extends CustomTraderTest {
     private Creature normalTrader;
     private final int num = 5;
     private final byte b = 0;
-    private int normalInventory;
+    private int normalItemCount;
 
     @BeforeEach
     protected void setUp() throws Throwable {
         super.setUp();
         customTrader = factory.createNewCustomTrader();
         normalTrader = factory.createNewTrader();
-        normalInventory = normalTrader.getInventory().getItemCount();
+        normalItemCount = normalTrader.getInventory().getItemCount();
     }
 
     @Test
@@ -57,7 +56,7 @@ public class CustomTraderModTests extends CustomTraderTest {
         verify(method, times(1)).invoke(customTrader, args);
 
         assertEquals(false, handler.invoke(normalTrader, method, args));
-        assertEquals(normalInventory, normalTrader.getInventory().getItems().size());
+        assertEquals(normalItemCount, normalTrader.getInventory().getItems().size());
         verify(method, times(1)).invoke(normalTrader, args);
     }
 
@@ -76,7 +75,7 @@ public class CustomTraderModTests extends CustomTraderTest {
         verify(method, times(1)).invoke(customTrader, args);
 
         assertEquals(true, handler.invoke(normalTrader, method, args));
-        assertEquals(normalInventory, normalTrader.getInventory().getItems().size());
+        assertEquals(normalItemCount, normalTrader.getInventory().getItems().size());
         verify(method, times(1)).invoke(normalTrader, args);
     }
 
@@ -154,7 +153,7 @@ public class CustomTraderModTests extends CustomTraderTest {
         assertEquals(0, customTrader.getShop().getMoney());
 
         assertEquals(true, handler.invoke(normalTrade, method, args));
-        assertEquals(normalInventory, normalTrader.getInventory().getItems().size());
+        assertEquals(normalItemCount, normalTrader.getInventory().getItems().size());
         verify(method, times(1)).invoke(normalTrade, args);
         assertEquals(100, normalTrader.getShop().getMoney());
     }
@@ -179,7 +178,7 @@ public class CustomTraderModTests extends CustomTraderTest {
         assertEquals(100, customTrader.getShop().getMoney());
 
         assertEquals(false, handler.invoke(normalTrade, method, args));
-        assertEquals(normalInventory, normalTrader.getInventory().getItems().size());
+        assertEquals(normalItemCount, normalTrader.getInventory().getItems().size());
         verify(method, times(1)).invoke(normalTrade, args);
         assertEquals(100, normalTrader.getShop().getMoney());
     }
