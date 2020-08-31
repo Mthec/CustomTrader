@@ -12,25 +12,50 @@ import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
 import java.util.List;
 import java.util.Properties;
 
-public class CustomTraderManagementQuestion extends CustomTraderQuestionExtension {
+public class CurrencyTraderManagementQuestion extends CustomTraderQuestionExtension {
     private final Creature trader;
+    private final int currency;
     private final String currentTag;
     private final List<String> allTags;
     private static final String NO_TAG = "-";
+    private Template template;
 
-    public CustomTraderManagementQuestion(Creature responder, Creature trader) {
-        super(responder, "Manage Custom Trader", "", MANAGETRADER, trader.getWurmId());
+    public CurrencyTraderManagementQuestion(Creature responder, Creature trader) {
+        super(responder, "Manage Currency Trader", "", MANAGETRADER, trader.getWurmId());
         this.trader = trader;
         currentTag = CustomTraderDatabase.getTagFor(trader);
         allTags = CustomTraderDatabase.getAllTags();
         allTags.add(0, NO_TAG);
+        EligibleTemplates.init();
+        currency = CustomTraderDatabase.getCurrencyFor(trader);
+        template = Template.getForTemplateId(currency);
     }
 
     @Override
     public void answer(Properties properties) {
         setAnswer(properties);
 
-        if (wasSelected("confirm")) {
+        if (wasSelected("do_filter")) {
+            String filter = getStringOrDefault("filter", "");
+            template = new Template(0, filter);
+
+            sendQuestion();
+        } else if (wasSelected("confirm")) {
+            Creature responder = getResponder();
+
+            int newTemplateIndex = getIntegerOrDefault("template", template.templateIndex);
+            if (newTemplateIndex != template.templateIndex) {
+                try {
+                    template = new Template(template, newTemplateIndex);
+                } catch (ArrayIndexOutOfBoundsException ignored) {
+                }
+            }
+
+            if (template.itemTemplate.getTemplateId() != currency) {
+                CustomTraderDatabase.setCurrencyFor(trader, template.itemTemplate.getTemplateId());
+                getResponder().getCommunicator().sendNormalServerMessage(trader.getName() + "'s currency was set to " + template.itemTemplate.getPlural() + ".");
+            }
+
             int dropdown = getIntegerOrDefault("tags", 0);
             String tag;
 
@@ -75,7 +100,7 @@ public class CustomTraderManagementQuestion extends CustomTraderQuestionExtensio
         } else if (wasSelected("edit")) {
             new CustomTraderEditTags(getResponder()).sendQuestion();
         } else if (wasSelected("list")) {
-            new CustomTraderItemList(getResponder(), trader, PaymentType.coin).sendQuestion();
+            new CustomTraderItemList(getResponder(), trader, PaymentType.currency).sendQuestion();
         } else if (wasSelected("dismiss")) {
             Creature responder = getResponder();
 
@@ -102,26 +127,34 @@ public class CustomTraderManagementQuestion extends CustomTraderQuestionExtensio
     @Override
     public void sendQuestion() {
         String bml = new BMLBuilder(id)
-                     .text("Use a 'tag' to use the same inventory contents for multiple custom/currency traders.")
-                     .text("Leave blank to keep the inventory unique to this custom trader.")
-                     .newLine()
-                     .harray(b -> b.label("Tag:").entry("tag", currentTag, CustomTraderMod.maxTagLength))
-                     .text(" - or - ")
-                     .harray(b -> b.dropdown("tags", Joiner.on(",").join(allTags)).spacer().button("edit", "Edit Tags"))
-                     .If(currentTag.isEmpty(),
-                             b -> b.text("Setting a tag will remove all items and delete every item on the stock list."),
-                             b -> b.text("Changing tags will delete all currently held items."))
-                     .newLine()
-                     .checkbox("empty", "Remove all items from inventory?", false)
-                     .checkbox("full", "Fully stock all items?", false)
-                     .newLine()
-                     .harray(b -> b
-                              .button("confirm", "Confirm").spacer()
-                              .button("list", "Items List").spacer()
-                              .button("dismiss", "Dismiss").confirm("Dismiss trader", "Are you sure you wish to dismiss " + trader.getName() + "?").spacer()
-                              .button("cancel", "Cancel").spacer())
-                     .build();
+                             .text("Use a 'tag' to use the same inventory contents for multiple custom/currency traders.")
+                             .newLine()
+                             .harray(b -> b.label("Tag:").entry("tag", currentTag, CustomTraderMod.maxTagLength))
+                             .text(" - or - ")
+                             .harray(b -> b.dropdown("tags", Joiner.on(",").join(allTags)).spacer().button("edit", "Edit Tags"))
+                             .If(currentTag.isEmpty(),
+                                     b -> b.text("Setting a tag will remove all items and delete every item on the stock list."),
+                                     b -> b.text("Changing tags will delete all currently held items."))
+                             .newLine()
+                             .text("Currency:")
+                             .text("Filter available templates:")
+                             .text("* is a wildcard that stands in for one or more characters.\ne.g. *clay* to find all clay items or lump* to find all types of lump.")
+                             .newLine()
+                             .harray(b -> b.dropdown("template", template.getOptions(), template.templateIndex)
+                                                  .spacer().label("Filter:")
+                                                  .entry("filter", template.filter, 10).spacer()
+                                                  .button("do_filter", "Apply"))
+                             .newLine()
+                             .checkbox("empty", "Remove all items from inventory?", false)
+                             .checkbox("full", "Fully stock all items?", false)
+                             .newLine()
+                             .harray(b -> b
+                                  .button("confirm", "Confirm").spacer()
+                                  .button("list", "Items List").spacer()
+                                  .button("dismiss", "Dismiss").confirm("Dismiss trader", "Are you sure you wish to dismiss " + trader.getName() + "?").spacer()
+                                  .button("cancel", "Cancel").spacer())
+                             .build();
 
-        getResponder().getCommunicator().sendBml(400, 350, true, true, bml, 200, 200, 200, title);
+        getResponder().getCommunicator().sendBml(450, 400, true, true, bml, 200, 200, 200, title);
     }
 }

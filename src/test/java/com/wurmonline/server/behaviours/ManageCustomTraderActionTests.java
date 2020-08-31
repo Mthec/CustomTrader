@@ -4,6 +4,7 @@ import com.wurmonline.server.creatures.Creature;
 import com.wurmonline.server.items.Item;
 import com.wurmonline.server.items.ItemList;
 import com.wurmonline.server.players.Player;
+import com.wurmonline.server.questions.CurrencyTraderManagementQuestion;
 import com.wurmonline.server.questions.CustomTraderManagementQuestion;
 import mod.wurmunlimited.npcs.customtrader.CustomTraderTest;
 import org.gotti.wurmunlimited.modsupport.actions.ActionEntryBuilder;
@@ -21,6 +22,7 @@ public class ManageCustomTraderActionTests extends CustomTraderTest {
     private Player gm;
     private Player nonGm;
     private Creature customTrader;
+    private Creature currencyTrader;
     private Item wand;
     private ManageCustomTraderAction action;
     private Action act = mock(Action.class);
@@ -33,6 +35,7 @@ public class ManageCustomTraderActionTests extends CustomTraderTest {
         gm = factory.createNewPlayer();
         gm.setPower((byte)2);
         customTrader = factory.createNewCustomTrader();
+        currencyTrader = factory.createNewCurrencyTrader();
         nonGm = factory.createNewPlayer();
         wand = factory.createNewItem(ItemList.wandGM);
     }
@@ -70,11 +73,20 @@ public class ManageCustomTraderActionTests extends CustomTraderTest {
     // action
 
     @Test
-    void testAction() {
+    void testActionCustomTrader() {
         boolean result = action.action(act, gm, wand, customTrader, action.getActionId(), 0f);
         assertTrue(result);
         assertEquals(1, factory.getCommunicator(gm).getBml().length);
         new CustomTraderManagementQuestion(gm, customTrader).sendQuestion();
+        assertThat(gm, bmlEqual());
+    }
+
+    @Test
+    void testActionCurrencyTrader() {
+        boolean result = action.action(act, gm, wand, currencyTrader, action.getActionId(), 0f);
+        assertTrue(result);
+        assertEquals(1, factory.getCommunicator(gm).getBml().length);
+        new CurrencyTraderManagementQuestion(gm, currencyTrader).sendQuestion();
         assertThat(gm, bmlEqual());
     }
 

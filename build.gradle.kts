@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "mod.wurmunlimited.npcs.customtrader"
-version = "0.1.3"
+version = "0.2"
 val shortName = "customtrader"
 val wurmServerFolder = "E:/Steam/steamapps/common/Wurm Unlimited/WurmServerLauncher/"
 
@@ -41,7 +41,7 @@ tasks {
 
         includeEmptyDirs = false
         archiveFileName.set("$shortName.jar")
-        exclude("**/TradeHandler.class", "**/CustomTraderTradeAction.class")
+        exclude("**/TradeHandler.class", "**/Trade.class", "**/TradingWindow.class", "**/CustomTraderTradeAction.class")
 
         manifest {
             attributes["Implementation-Version"] = version

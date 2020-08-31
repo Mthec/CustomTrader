@@ -1,6 +1,7 @@
 package mod.wurmunlimited.npcs.customtrader;
 
 import com.wurmonline.server.creatures.Creature;
+import com.wurmonline.server.items.ItemList;
 import com.wurmonline.server.spells.Spells;
 import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
 import mod.wurmunlimited.npcs.customtrader.stock.Enchantment;
@@ -170,6 +171,22 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
 
         List<String> allTags = CustomTraderDatabase.getAllTags();
         assertEquals(0, allTags.size());
+    }
+
+    // Currency
+
+    @Test
+    void testCurrencyProperlySet() {
+        Creature trader = factory.createNewCurrencyTrader(ItemList.sprout, 10);
+
+        assertEquals(ItemList.sprout, CustomTraderDatabase.getCurrencyFor(trader));
+    }
+
+    @Test
+    void testGetCurrencyFor() {
+        Creature trader = factory.createNewCurrencyTrader(ItemList.acorn, 1);
+
+        assertEquals(ItemList.acorn, CustomTraderDatabase.getCurrencyFor(trader));
     }
 
     // Stock

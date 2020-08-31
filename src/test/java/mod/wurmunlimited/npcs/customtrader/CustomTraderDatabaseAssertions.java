@@ -1,6 +1,9 @@
 package mod.wurmunlimited.npcs.customtrader;
 
 import com.wurmonline.server.creatures.Creature;
+import com.wurmonline.server.items.ItemTemplate;
+import com.wurmonline.server.items.ItemTemplateFactory;
+import com.wurmonline.server.items.NoSuchTemplateException;
 import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
 import org.gotti.wurmunlimited.modloader.ReflectionUtil;
 import org.hamcrest.Description;

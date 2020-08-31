@@ -35,4 +35,9 @@ class Template {
     static Template _default() {
         return new Template(0, "");
     }
+
+    static Template getForTemplateId(int templateId) {
+        EligibleTemplates eligible = new EligibleTemplates("");
+        return new Template(eligible.getIndexOf(templateId), "");
+    }
 }

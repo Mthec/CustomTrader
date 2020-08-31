@@ -58,6 +58,14 @@ class EligibleTemplates {
         return eligibleTemplates.get(order[templateIndex]);
     }
 
+    int getIndexOf(int templateId) {
+        for (int i = 0; i < order.length; i++) {
+            if (order[i] == templateId)
+                return i;
+        }
+        return -1;
+    }
+
     private static Iterator<String> nameIterator(int[] order) {
         return new Iterator<String>() {
             private int idx;

@@ -81,6 +81,11 @@ public class TradeHandler implements MiscConstants, ItemTypes, MonetaryConstants
 
     }
 
+    TradeHandler() {
+        shop = null;
+        ownerTrade = false;
+    }
+
     void end() {
         this.creature = null;
         this.trade = null;

@@ -18,15 +18,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class CustomTraderItemList extends CustomTraderQuestionExtension {
     private final Creature trader;
     private final StockInfo[] stock;
+    private final PaymentType paymentType;
 
     private static final int day = 24;
     private static final int week = 168;
     private static final int month = 672;
 
-    CustomTraderItemList(Creature responder, Creature trader) {
+    CustomTraderItemList(Creature responder, Creature trader, PaymentType paymentType) {
         super(responder, "Item List", "", MANAGETRADER, trader.getWurmId());
         this.trader = trader;
         stock = CustomTraderDatabase.getStockFor(trader);
+        this.paymentType = paymentType;
     }
 
     @Override
@@ -37,7 +39,7 @@ public class CustomTraderItemList extends CustomTraderQuestionExtension {
             return;
 
         if (wasSelected("add"))
-            new CustomTraderItemsConfigurationQuestion(getResponder(), trader).sendQuestion();
+            new CustomTraderItemsConfigurationQuestion(getResponder(), trader, paymentType).sendQuestion();
         else if (wasSelected("confirm")) {
             int removed = 0;
 
@@ -99,7 +101,7 @@ public class CustomTraderItemList extends CustomTraderQuestionExtension {
                                      int rowNum = rowNumber.getAndIncrement();
                                      return b.label(sb.toString())
                                              .label(df.format(item.item.ql))
-                                             .label(new Change(item.item.price).getChangeShortString())
+                                             .label((paymentType == PaymentType.currency) ? String.valueOf(item.item.price) : new Change(item.item.price).getChangeShortString())
                                              .label(WeightHelper.toString(item.item.weight))
                                              .label(String.valueOf(item.item.enchantments.length))
                                              .label(String.valueOf(item.maxNum))

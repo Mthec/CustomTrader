@@ -43,7 +43,7 @@ public class CustomTraderItemsConfigurationQuestionTests extends CustomTraderTes
 
     private CustomTraderItemsConfigurationQuestion getQuestionAtStage(CustomTraderItemsConfigurationQuestion.ItemDefinitionStage stage) {
         try {
-            CustomTraderItemsConfigurationQuestion question = new CustomTraderItemsConfigurationQuestion(gm, trader);
+            CustomTraderItemsConfigurationQuestion question = new CustomTraderItemsConfigurationQuestion(gm, trader, PaymentType.coin);
             ReflectionUtil.setPrivateField(question, CustomTraderItemsConfigurationQuestion.class.getDeclaredField("stage"), stage);
 
             if (stage != TEMPLATE) {
@@ -191,7 +191,7 @@ public class CustomTraderItemsConfigurationQuestionTests extends CustomTraderTes
 
     @Test
     void testStockUpdatedWithCompleteOrder() {
-        CustomTraderItemsConfigurationQuestion question = new CustomTraderItemsConfigurationQuestion(gm, trader);
+        CustomTraderItemsConfigurationQuestion question = new CustomTraderItemsConfigurationQuestion(gm, trader, PaymentType.coin);
         question.sendQuestion();
         Properties answers = new Properties();
         answers.setProperty("template", String.valueOf(templateIndex));

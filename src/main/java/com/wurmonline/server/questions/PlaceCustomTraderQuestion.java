@@ -91,7 +91,7 @@ public class PlaceCustomTraderQuestion extends CustomTraderQuestionExtension {
         String bml = new BMLBuilder(id)
                              .text("Place Custom Trader").bold()
                              .text("Place a trader with a custom inventory that will restock on a schedule.")
-                             .text("Use a 'tag' to use the same inventory contents for multiple custom traders.")
+                             .text("Use a 'tag' to use the same inventory contents for multiple custom/currency traders.")
                              .newLine()
                              .harray(b -> b.label("Name:").entry("name", 20))
                              .text("Leave blank for a random name.").italic()

@@ -12,6 +12,7 @@ import com.wurmonline.server.items.ItemSpellEffects;
 import com.wurmonline.server.items.NoSuchTemplateException;
 import com.wurmonline.server.spells.SpellEffect;
 import com.wurmonline.shared.exceptions.WurmServerException;
+import mod.wurmunlimited.npcs.customtrader.CustomTraderTemplate;
 import mod.wurmunlimited.npcs.customtrader.stock.Enchantment;
 import mod.wurmunlimited.npcs.customtrader.stock.StockInfo;
 import mod.wurmunlimited.npcs.customtrader.stock.StockItem;
@@ -22,6 +23,7 @@ import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
@@ -53,6 +55,12 @@ public class CustomTraderDatabase {
                                                              "id INTEGER UNIQUE," +
                                                              "tag TEXT" +
                                                              ");");
+        ps.execute();
+        ps = conn.prepareStatement("CREATE TABLE IF NOT EXISTS currency_traders (" +
+                                           "id INTEGER UNIQUE," +
+                                           "currency INTEGER," +
+                                           "tag TEXT" +
+                                           ");");
         ps.execute();
         ps = conn.prepareStatement("CREATE TABLE IF NOT EXISTS trader_stock (" +
                                            "trader_id INTEGER," +
@@ -116,11 +124,24 @@ public class CustomTraderDatabase {
         }
     }
 
+    // Custom Trader
     public static void addNew(Creature trader, String tag) throws SQLException {
         execute(db -> {
             PreparedStatement ps = db.prepareStatement("INSERT OR IGNORE INTO traders (id, tag) VALUES (?, ?)");
             ps.setLong(1, trader.getWurmId());
             ps.setString(2, tag);
+
+            ps.execute();
+        });
+    }
+
+    // Currency Trader
+    public static void addNew(Creature trader, int currency, String tag) throws SQLException {
+        execute(db -> {
+            PreparedStatement ps = db.prepareStatement("INSERT OR IGNORE INTO currency_traders (id, currency, tag) VALUES (?, ?, ?)");
+            ps.setLong(1, trader.getWurmId());
+            ps.setInt(2, currency);
+            ps.setString(3, tag);
 
             ps.execute();
         });
@@ -168,12 +189,52 @@ public class CustomTraderDatabase {
         }
     }
 
+    public static int getCurrencyFor(Creature trader) {
+        AtomicInteger currency = new AtomicInteger(-1);
+
+        try {
+            execute(db -> {
+                PreparedStatement ps = db.prepareStatement("SELECT currency FROM currency_traders WHERE id=?");
+                ps.setLong(1, trader.getWurmId());
+                ResultSet rs = ps.executeQuery();
+
+                if (rs.isBeforeFirst())
+                    currency.set(rs.getInt(1));
+                else
+                    currency.set(-1);
+            });
+        } catch (SQLException e) {
+            logger.warning("Error when fetching \"currency\" for trader (" + trader.getWurmId() + "), not selecting a currency.");
+            e.printStackTrace();
+            return -1;
+        }
+
+        return currency.get();
+    }
+
+    public static void setCurrencyFor(Creature trader, int currency) {
+        try {
+            execute(db -> {
+                PreparedStatement ps = db.prepareStatement("UPDATE currency_traders SET currency=? WHERE id=?");
+                ps.setInt(1, currency);
+                ps.setLong(2, trader.getWurmId());
+
+                ps.execute();
+            });
+        } catch (SQLException e) {
+            logger.warning("Error when settings \"currency\" (" + currency + ") for trader (" + trader.getWurmId() + ")");
+            e.printStackTrace();
+        }
+    }
+
     public static void updateTag(Creature trader, String tag) throws FailedToUpdateTagException {
         try {
             execute(db -> {
                 removeItemsFromInventory(trader, getStockFor(trader));
 
-                PreparedStatement ps = db.prepareStatement("UPDATE traders SET tag=? WHERE id=?");
+                PreparedStatement ps = db.prepareStatement("UPDATE " +
+                                                               (CustomTraderTemplate.isCustomTrader(trader) ? "traders" : "currency_traders")
+                                                                + " SET tag=? WHERE id=?");
                 ps.setString(1, tag);
                 ps.setLong(2, trader.getWurmId());
 
@@ -192,6 +253,12 @@ public class CustomTraderDatabase {
                 removeItemsFromInventoryForTag(tag);
 
                 PreparedStatement ps = db.prepareStatement("UPDATE traders SET tag=? WHERE tag=?");
+                ps.setString(1, "");
+                ps.setString(2, tag);
+
+                ps.execute();
+
+                ps = db.prepareStatement("UPDATE currency_traders SET tag=? WHERE tag=?");
                 ps.setString(1, "");
                 ps.setString(2, tag);
 
@@ -218,6 +285,12 @@ public class CustomTraderDatabase {
 
                 ps.execute();
 
+                ps = db.prepareStatement("UPDATE currency_traders SET tag=? WHERE tag=?");
+                ps.setString(1, to);
+                ps.setString(2, from);
+
+                ps.execute();
+
                 ps = db.prepareStatement("UPDATE tag_stock SET tag=? WHERE tag=?");
                 ps.setString(1, to);
                 ps.setString(2, from);
@@ -236,7 +309,9 @@ public class CustomTraderDatabase {
 
         try {
             execute(db -> {
-                PreparedStatement ps = db.prepareStatement("SELECT tag FROM traders WHERE id=?");
+                PreparedStatement ps = db.prepareStatement("SELECT tag FROM " +
+                                                               (CustomTraderTemplate.isCustomTrader(trader) ? "traders" : "currency_traders")
+                                                               + " WHERE id=?");
                 ps.setLong(1, trader.getWurmId());
                 ResultSet rs = ps.executeQuery();
 
@@ -266,7 +341,10 @@ public class CustomTraderDatabase {
 
         try {
             execute(db -> {
-                PreparedStatement ps = db.prepareStatement("SELECT DISTINCT tag FROM traders ORDER BY tag COLLATE NOCASE");
+                PreparedStatement ps = db.prepareStatement("SELECT tag FROM traders " +
+                                                               "UNION " +
+                                                               "SELECT tag FROM currency_traders " +
+                                                               "ORDER BY 1 COLLATE NOCASE");
                 ResultSet rs = ps.executeQuery();
 
                 while (rs.next()) {
@@ -454,7 +532,7 @@ public class CustomTraderDatabase {
         try {
             StockInfo[] finalStock = stock;
             execute(db -> {
-                PreparedStatement ps = db.prepareStatement("SELECT id FROM traders WHERE tag=?");
+                PreparedStatement ps = db.prepareStatement("SELECT id FROM traders WHERE tag=? UNION SELECT id FROM currency_traders WHERE tag=?");
                 ps.setString(1, tag);
                 ResultSet rs = ps.executeQuery();
 

@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class CustomTraderItemsConfigurationQuestion extends CustomTraderQuestionExtension {
     private final Creature trader;
     private ItemDefinitionStage stage = ItemDefinitionStage.TEMPLATE;
+    private final PaymentType paymentType;
 
     // Item Settings
     private Template template;
@@ -32,9 +33,10 @@ public class CustomTraderItemsConfigurationQuestion extends CustomTraderQuestion
         RESTOCKING
     }
 
-    public CustomTraderItemsConfigurationQuestion(Creature responder, Creature trader) {
+    public CustomTraderItemsConfigurationQuestion(Creature responder, Creature trader, PaymentType paymentType) {
         super(responder, "Modify Item List", "", MANAGETRADER, trader.getWurmId());
         this.trader = trader;
+        this.paymentType = paymentType;
         EligibleTemplates.init();
         template = Template._default();
         materials = new EligibleMaterials(template.itemTemplate);
@@ -43,8 +45,8 @@ public class CustomTraderItemsConfigurationQuestion extends CustomTraderQuestion
         restocking = Restocking._default();
     }
 
-    public CustomTraderItemsConfigurationQuestion(Creature responder, Creature trader, ItemDefinitionStage stage, Template template, Details details, Enchantments enchantments, Restocking restocking) {
-        this(responder, trader);
+    public CustomTraderItemsConfigurationQuestion(Creature responder, Creature trader, PaymentType paymentType, ItemDefinitionStage stage, Template template, Details details, Enchantments enchantments, Restocking restocking) {
+        this(responder, trader, paymentType);
         this.stage = stage;
         this.template = template;
         this.details = details;
@@ -159,7 +161,7 @@ public class CustomTraderItemsConfigurationQuestion extends CustomTraderQuestion
                         int newPrice = Integer.parseInt(priceString);
                         if (newPrice != price) {
                             if (newPrice <= 0) {
-                                responder.getCommunicator().sendNormalServerMessage("Price must be greater than 0 irons.");
+                                responder.getCommunicator().sendNormalServerMessage("Price must be greater than 0.");
                                 reshowStage = true;
                             } else {
                                 price = newPrice;
@@ -303,7 +305,7 @@ public class CustomTraderItemsConfigurationQuestion extends CustomTraderQuestion
             }
         }
 
-        new CustomTraderItemsConfigurationQuestion(responder, trader, stage, template, details, enchantments, restocking)
+        new CustomTraderItemsConfigurationQuestion(responder, trader, paymentType, stage, template, details, enchantments, restocking)
                 .sendQuestion();
     }
 
@@ -363,7 +365,9 @@ public class CustomTraderItemsConfigurationQuestion extends CustomTraderQuestion
                         .newLine()
                         .harray(b -> b.label("Weight").spacer().entry("weight", WeightHelper.toString(details.weight), 10).spacer().text("kg"))
                         .newLine()
-                        .harray(b -> b.label("Price").spacer().entry("price", Integer.toString(details.price), 10).spacer().text("irons"))
+                        .harray(b -> b.label("Price").spacer()
+                                      .entry("price", Integer.toString(details.price), 10).spacer()
+                                      .If(paymentType == PaymentType.coin, b2 -> b2.text("irons"), b2 -> b2.text("currency")))
                         .newLine()
                         .harray(b -> b.button("TEMPLATE", "Back").spacer().button("RESTOCKING", "Next").spacer()
                                              .button("ENCHANTMENTS", "Enchantments").spacer().button("cancel", "Cancel"));
