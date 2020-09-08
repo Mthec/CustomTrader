@@ -83,7 +83,7 @@ public class CustomTraderItemsConfigurationQuestion extends CustomTraderQuestion
                 // TODO - How can I break the link between template > material > details?
                 if (template.itemTemplate != null) {
                     materials = new EligibleMaterials(template.itemTemplate);
-                    details = new Details(details.ql, materials.getIndexOf(template.itemTemplate.getMaterial()), details.rarity, details.price, template.itemTemplate.getWeightGrams());
+                    details = new Details(details.ql, materials.getIndexOf(template.itemTemplate.getMaterial()), details.rarity, details.price, template.itemTemplate.getWeightGrams(), details.aux);
                 } else
                     reshowStage = true;
                 break;
@@ -93,6 +93,7 @@ public class CustomTraderItemsConfigurationQuestion extends CustomTraderQuestion
                 byte rarity = details.rarity;
                 int price = details.price;
                 int weight = details.weight;
+                byte aux = details.aux;
 
                 try {
                     String qlString = properties.getProperty("ql");
@@ -173,6 +174,19 @@ public class CustomTraderItemsConfigurationQuestion extends CustomTraderQuestion
                     reshowStage = true;
                 }
 
+                String auxString = properties.getProperty("aux");
+                if (auxString != null && auxString.length() > 0) {
+                    try {
+                        byte newAux = Byte.parseByte(auxString);
+                        if (newAux != aux) {
+                            aux = newAux;
+                        }
+                    } catch (NumberFormatException e) {
+                        responder.getCommunicator().sendNormalServerMessage("Aux Byte was invalid.");
+                        reshowStage = true;
+                    }
+                }
+
                 try {
                     String weightString = properties.getProperty("weight");
 
@@ -197,7 +211,7 @@ public class CustomTraderItemsConfigurationQuestion extends CustomTraderQuestion
                     reshowStage = true;
                 }
 
-                details = new Details(ql, materialIndex, rarity, price, weight);
+                details = new Details(ql, materialIndex, rarity, price, weight, aux);
                 break;
             case ENCHANTMENTS:
                 int i = 0;
@@ -295,7 +309,7 @@ public class CustomTraderItemsConfigurationQuestion extends CustomTraderQuestion
                 try {
                     CustomTraderDatabase.addStockItemTo(trader, template.itemTemplate.getTemplateId(),
                             details.ql, details.price, materials.getMaterial(details.materialIndex), details.rarity,
-                            details.weight, enchants.toArray(new Enchantment[0]),
+                            details.weight, enchants.toArray(new Enchantment[0]), details.aux,
                             restocking.maxStock, restocking.restockRate, restocking.restockInterval);
                     responder.getCommunicator().sendNormalServerMessage(trader.getName() + " adds the new stock to their list.");
                     return;
@@ -369,8 +383,11 @@ public class CustomTraderItemsConfigurationQuestion extends CustomTraderQuestion
                                       .entry("price", Integer.toString(details.price), 10).spacer()
                                       .If(paymentType == PaymentType.coin, b2 -> b2.text("irons"), b2 -> b2.text("currency")))
                         .newLine()
+                        .label("Advanced:")
+                        .harray(b -> b.label("Aux Byte").spacer().entry("aux", Byte.toString(details.aux), 3).spacer())
+                        .newLine()
                         .harray(b -> b.button("TEMPLATE", "Back").spacer().button("RESTOCKING", "Next").spacer()
-                                             .button("ENCHANTMENTS", "Enchantments").spacer().button("cancel", "Cancel"));
+                                                   .button("ENCHANTMENTS", "Enchantments").spacer().button("cancel", "Cancel"));
                 break;
             case ENCHANTMENTS:
                 AtomicInteger i = new AtomicInteger(0);

@@ -52,7 +52,7 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
     @Test
     void testNothingChangesIfNoSettingsAreAltered() throws CustomTraderDatabase.StockUpdateException {
         assert CustomTraderDatabase.getTagFor(trader).equals("");
-        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 1, (byte)0, (byte)0, 1, new Enchantment[0], 1, 1, 1);
+        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 1, (byte)0, (byte)0, 1, new Enchantment[0], (byte)0, 1, 1, 1);
         CustomTraderDatabase.restock(trader);
 
         Properties properties = new Properties();
@@ -126,7 +126,7 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
 
     @Test
     void testRemoveTagRemovesItems() throws CustomTraderDatabase.StockUpdateException, CustomTraderDatabase.FailedToUpdateTagException {
-        CustomTraderDatabase.addStockItemTo(tag, 1, 1, 1, (byte)0, (byte)0, 1, new Enchantment[0], 1, 1, 0);
+        CustomTraderDatabase.addStockItemTo(tag, 1, 1, 1, (byte)0, (byte)0, 1, new Enchantment[0], (byte)0, 1, 1, 0);
         CustomTraderDatabase.updateTag(trader, tag);
         CustomTraderDatabase.restock(trader);
         assert trader.getInventory().getItems().size() == 1;
@@ -143,7 +143,7 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
 
     @Test
     void testSetTagRemovesItems() throws CustomTraderDatabase.StockUpdateException {
-        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 1, (byte)0, (byte)0, 1, new Enchantment[0], 1, 1, 0);
+        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 1, (byte)0, (byte)0, 1, new Enchantment[0], (byte)0, 1, 1, 0);
         CustomTraderDatabase.restock(trader);
         assert trader.getInventory().getItems().size() == 1;
         assert CustomTraderDatabase.getStockFor(trader).length == 1;
@@ -160,7 +160,7 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
     @Test
     void testSetDropdownTagRemovesItems() throws CustomTraderDatabase.StockUpdateException, CustomTraderDatabase.FailedToUpdateTagException {
         CustomTraderDatabase.updateTag(factory.createNewCustomTrader(), tag);
-        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 1, (byte)0, (byte)0, 1, new Enchantment[0], 1, 1, 0);
+        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 1, (byte)0, (byte)0, 1, new Enchantment[0], (byte)0, 1, 1, 0);
         CustomTraderDatabase.restock(trader);
         assert trader.getInventory().getItems().size() == 1;
         assert CustomTraderDatabase.getStockFor(trader).length == 1;
@@ -176,7 +176,7 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
 
     @Test
     void testEmptyRemovesAllItemsFromInventory() throws CustomTraderDatabase.StockUpdateException {
-        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 1, (byte)0, (byte)0, 1, new Enchantment[0], 10, 1, 0);
+        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 1, (byte)0, (byte)0, 1, new Enchantment[0], (byte)0, 10, 1, 0);
         CustomTraderDatabase.fullyStock(trader);
         trader.getInventory().insertItem(factory.createNewItem());
 
@@ -194,7 +194,7 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
 
     @Test
     void testFullyRestockFillsInventoryWithItems() throws CustomTraderDatabase.StockUpdateException {
-        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 1, (byte)0, (byte)0, 1, new Enchantment[0], 10, 1, 0);
+        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 1, (byte)0, (byte)0, 1, new Enchantment[0], (byte)0, 10, 1, 0);
         assert trader.getInventory().getItems().size() == 0;
         assert CustomTraderDatabase.getStockFor(trader).length == 1;
 
@@ -209,7 +209,7 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
 
     @Test
     void testEmptyAndFullyRestock() throws CustomTraderDatabase.StockUpdateException {
-        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 1, (byte)0, (byte)0, 1, new Enchantment[0], 10, 1, 0);
+        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 1, (byte)0, (byte)0, 1, new Enchantment[0], (byte)0, 10, 1, 0);
         CustomTraderDatabase.fullyStock(trader);
         trader.getInventory().insertItem(factory.createNewItem());
 
@@ -229,7 +229,7 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
 
     @Test
     void testEditTagsButtonSelected() throws CustomTraderDatabase.StockUpdateException {
-        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 1, (byte)0, (byte)0, 1, new Enchantment[0], 1, 1, 1);
+        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 1, (byte)0, (byte)0, 1, new Enchantment[0], (byte)0, 1, 1, 1);
         assert CustomTraderDatabase.getStockFor(trader).length == 1;
 
         Properties properties = new Properties();
@@ -242,7 +242,7 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
 
     @Test
     void testEditTagsButtonSelectedDoesNotChangeTagOrDeleteStock() throws CustomTraderDatabase.StockUpdateException {
-        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 1, (byte)0, (byte)0, 1, new Enchantment[0], 1, 1, 1);
+        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 1, (byte)0, (byte)0, 1, new Enchantment[0], (byte)0, 1, 1, 1);
         assert CustomTraderDatabase.getStockFor(trader).length == 1;
 
         Properties properties = new Properties();
@@ -259,7 +259,7 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
 
     @Test
     void testListButtonSelected() throws CustomTraderDatabase.StockUpdateException {
-        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 1, (byte)0, (byte)0, 1, new Enchantment[0], 1, 1, 1);
+        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 1, (byte)0, (byte)0, 1, new Enchantment[0], (byte)0, 1, 1, 1);
         assert CustomTraderDatabase.getStockFor(trader).length == 1;
 
         Properties properties = new Properties();
@@ -272,7 +272,7 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
 
     @Test
     void testListButtonSelectedDoesNotChangeTagOrDeleteStock() throws CustomTraderDatabase.StockUpdateException {
-        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 1, (byte)0, (byte)0, 1, new Enchantment[0], 1, 1, 1);
+        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 1, (byte)0, (byte)0, 1, new Enchantment[0], (byte)0, 1, 1, 1);
         assert CustomTraderDatabase.getStockFor(trader).length == 1;
 
         Properties properties = new Properties();
@@ -289,7 +289,7 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
 
     @Test
     void testDismissButtonSelected() throws CustomTraderDatabase.StockUpdateException {
-        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 1, (byte)0, (byte)0, 1, new Enchantment[0], 1, 1, 1);
+        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 1, (byte)0, (byte)0, 1, new Enchantment[0], (byte)0, 1, 1, 1);
         assert CustomTraderDatabase.getStockFor(trader).length == 1;
         assert factory.getAllCreatures().size() == 2;
 
@@ -304,7 +304,7 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
 
     @Test
     void testCannotDismissIfTraderIsTrading() throws CustomTraderDatabase.StockUpdateException {
-        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 1, (byte)0, (byte)0, 1, new Enchantment[0], 1, 1, 1);
+        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 1, (byte)0, (byte)0, 1, new Enchantment[0], (byte)0, 1, 1, 1);
         assert CustomTraderDatabase.getStockFor(trader).length == 1;
         assert factory.getAllCreatures().size() == 2;
 

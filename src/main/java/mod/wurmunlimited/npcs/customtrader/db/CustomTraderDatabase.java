@@ -100,6 +100,17 @@ public class CustomTraderDatabase {
                                                              ");");
         ps.execute();
 
+        try (Statement statement = conn.createStatement()) {
+            try (ResultSet rs = statement.executeQuery("PRAGMA user_version;")) {
+                int version = rs.getInt(1);
+                if (version == 0) {
+                    conn.prepareStatement("ALTER TABLE trader_stock ADD COLUMN aux INTEGER;").execute();
+                    conn.prepareStatement("ALTER TABLE tag_stock ADD COLUMN aux INTEGER;").execute();
+                    conn.prepareStatement("PRAGMA user_version = 1;").execute();
+                }
+            }
+        }
+
         created = true;
     }
 
@@ -391,7 +402,8 @@ public class CustomTraderDatabase {
                             (byte)rs.getInt(5),
                             (byte)rs.getInt(6),
                             rs.getInt(7),
-                            Enchantment.parseEnchantments(rs.getString(8))),
+                            Enchantment.parseEnchantments(rs.getString(8)),
+                            rs.getByte(12)),
                             rs.getInt(9),
                             rs.getInt(10),
                             rs.getInt(11)));
@@ -410,16 +422,16 @@ public class CustomTraderDatabase {
         return new StockInfo[0];
     }
 
-    public static void addStockItemTo(Creature trader, int templateId, float ql, int price, byte material, byte rarity, int weight, Enchantment[] enchantments, int maxStock, int restockRate, int restockInterval) throws StockUpdateException {
+    public static void addStockItemTo(Creature trader, int templateId, float ql, int price, byte material, byte rarity, int weight, Enchantment[] enchantments, byte aux, int maxStock, int restockRate, int restockInterval) throws StockUpdateException {
         try {
             String tag = getTagFor(trader);
             if (!tag.isEmpty()) {
-                addStockItemTo(tag, templateId, ql, price, material, rarity, weight, enchantments, maxStock, restockRate, restockInterval);
+                addStockItemTo(tag, templateId, ql, price, material, rarity, weight, enchantments, aux, maxStock, restockRate, restockInterval);
                 return;
             }
 
             execute(db -> {
-                PreparedStatement ps = db.prepareStatement("INSERT INTO trader_stock VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                PreparedStatement ps = db.prepareStatement("INSERT INTO trader_stock VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 ps.setLong(1, trader.getWurmId());
                 ps.setInt(2, templateId);
                 ps.setFloat(3, ql);
@@ -431,6 +443,7 @@ public class CustomTraderDatabase {
                 ps.setInt(9, maxStock);
                 ps.setInt(10, restockRate);
                 ps.setInt(11, restockInterval);
+                ps.setByte(12, aux);
                 ps.execute();
             });
         } catch (SQLException e) {
@@ -441,10 +454,10 @@ public class CustomTraderDatabase {
         }
     }
 
-    public static void addStockItemTo(String tag, int templateId, float ql, int price, byte material, byte rarity, int weight, Enchantment[] enchantments, int maxStock, int restockRate, int restockInterval) throws StockUpdateException {
+    public static void addStockItemTo(String tag, int templateId, float ql, int price, byte material, byte rarity, int weight, Enchantment[] enchantments, byte aux, int maxStock, int restockRate, int restockInterval) throws StockUpdateException {
         try {
             execute(db -> {
-                PreparedStatement ps = db.prepareStatement("INSERT INTO tag_stock VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                PreparedStatement ps = db.prepareStatement("INSERT INTO tag_stock VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 ps.setString(1, tag);
                 ps.setInt(2, templateId);
                 ps.setFloat(3, ql);
@@ -456,6 +469,7 @@ public class CustomTraderDatabase {
                 ps.setInt(9, maxStock);
                 ps.setInt(10, restockRate);
                 ps.setInt(11, restockInterval);
+                ps.setByte(12, aux);
                 ps.execute();
             });
         } catch (SQLException e) {
@@ -604,6 +618,7 @@ public class CustomTraderDatabase {
                         effects.addSpellEffect(new SpellEffect(item.getWurmId(), enchantment.spell.getEnchantment(), enchantment.power, 20000000));
                     }
                 }
+                item.setAuxData(stockItem.aux);
                 inventory.insertItem(item, true);
             }
 

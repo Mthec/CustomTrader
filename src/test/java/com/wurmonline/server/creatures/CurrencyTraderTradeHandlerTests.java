@@ -38,7 +38,7 @@ public class CurrencyTraderTradeHandlerTests extends CustomTraderTest {
         currency = ItemList.medallionHota;
         trader = factory.createNewCurrencyTrader(currency, 1);
         assert trader.getShop() != null;
-        CustomTraderDatabase.addStockItemTo(trader, 5, 5, 1, (byte)0, (byte)0, 5, new Enchantment[0], 5, 5, 0);
+        CustomTraderDatabase.addStockItemTo(trader, 5, 5, 1, (byte)0, (byte)0, 5, new Enchantment[0], (byte)0, 5, 5, 0);
         CustomTraderDatabase.restock(trader);
         trade = new CurrencyTraderTrade(player, trader);
         player.setTrade(trade);
@@ -92,7 +92,7 @@ public class CurrencyTraderTradeHandlerTests extends CustomTraderTest {
         trade.end(trader, true);
         CustomTraderDatabase.setCurrencyFor(trader, currency);
         CustomTraderDatabase.deleteAllStockFor(trader);
-        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 10, (byte)0, (byte)2, 1, new Enchantment[0], 1, 0, 100);
+        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 10, (byte)0, (byte)2, 1, new Enchantment[0], (byte)0, 1, 0, 100);
         CustomTraderDatabase.fullyStock(trader);
         trade = new CurrencyTraderTrade(player, trader);
         player.setTrade(trade);
@@ -116,7 +116,7 @@ public class CurrencyTraderTradeHandlerTests extends CustomTraderTest {
         trade.end(trader, true);
         CustomTraderDatabase.setCurrencyFor(trader, currency);
         CustomTraderDatabase.deleteAllStockFor(trader);
-        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 10, (byte)0, (byte)2, 1, new Enchantment[0], 1, 0, 100);
+        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 10, (byte)0, (byte)2, 1, new Enchantment[0], (byte)0, 1, 0, 100);
         CustomTraderDatabase.fullyStock(trader);
         trade = new CurrencyTraderTrade(player, trader);
         player.setTrade(trade);
@@ -195,7 +195,7 @@ public class CurrencyTraderTradeHandlerTests extends CustomTraderTest {
             trade.getTradingWindow(1).removeItem(item);
         }
         CustomTraderDatabase.deleteAllStockFor(trader);
-        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 1, (byte)0, (byte)2, 1, new Enchantment[0], 1, 0, 100);
+        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 1, (byte)0, (byte)2, 1, new Enchantment[0], (byte)0, 1, 0, 100);
         CustomTraderDatabase.fullyStock(trader);
         assert trader.getInventory().getItems().size() == 1;
 

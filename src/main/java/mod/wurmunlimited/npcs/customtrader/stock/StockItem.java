@@ -12,8 +12,9 @@ public class StockItem {
     public final byte rarity;
     public final int weight;
     public final Enchantment[] enchantments;
+    public final byte aux;
 
-    public StockItem(int templateId, float ql, int price, byte material, byte rarity, int weight, Enchantment[] enchantments) {
+    public StockItem(int templateId, float ql, int price, byte material, byte rarity, int weight, Enchantment[] enchantments, byte aux) {
         this.templateId = templateId;
         this.ql = ql;
         this.price = price;
@@ -21,6 +22,7 @@ public class StockItem {
         this.rarity = rarity;
         this.weight = weight;
         this.enchantments = enchantments;
+        this.aux = aux;
     }
 
     public boolean matches(Item item) {
@@ -29,7 +31,8 @@ public class StockItem {
                        item.getMaterial() == material &&
                        item.getRarity() == rarity &&
                        item.getWeightGrams() == weight &&
-                       Arrays.equals(Enchantment.parseEnchantments(item), enchantments);
+                       Arrays.equals(Enchantment.parseEnchantments(item), enchantments) &&
+                       item.getAuxData() == aux;
     }
 
     @Override
@@ -42,6 +45,7 @@ public class StockItem {
         result = 31 * result + (int)rarity;
         result = 31 * result + weight;
         result = 31 * result + Arrays.hashCode(enchantments);
+        result = 31 * result + (int)aux;
 
         return result;
     }
@@ -56,7 +60,8 @@ public class StockItem {
                    item.material == material &&
                    item.rarity == rarity &&
                    item.weight == weight &&
-                   Arrays.equals(item.enchantments, enchantments);
+                   Arrays.equals(item.enchantments, enchantments) &&
+                   item.aux == aux;
         }
 
         return super.equals(obj);

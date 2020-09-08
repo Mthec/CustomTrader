@@ -67,6 +67,7 @@ public class CustomTraderItemsConfigurationQuestionTests extends CustomTraderTes
         properties.setProperty("rarity", "0");
         properties.setProperty("price", "1");
         properties.setProperty("weight", "1.2");
+        properties.setProperty("aux", "0");
         return properties;
     }
 
@@ -475,6 +476,20 @@ public class CustomTraderItemsConfigurationQuestionTests extends CustomTraderTes
         assertThat(gm, didNotReceiveMessageContaining("Price was invalid"));
         Details details = ReflectionUtil.getPrivateField(question, CustomTraderItemsConfigurationQuestion.class.getDeclaredField("details"));
         assertEquals(1200, details.weight);
+    }
+
+    @Test
+    void testDETAILSAuxInvalidReshowsQuestion() {
+        Properties answers = getCorrectDetails();
+        answers.setProperty("aux", "abc");
+        answers.setProperty("RESTOCKING", "true");
+        CustomTraderItemsConfigurationQuestion question = getQuestionAtStage(DETAILS);
+        question.sendQuestion();
+        question.answer(answers);
+
+        assertEquals(2, factory.getCommunicator(gm).getBml().length);
+        assertThat(gm, bmlEqual());
+        assertThat(gm, receivedMessageContaining("Aux Byte was invalid."));
     }
 
     @Test

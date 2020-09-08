@@ -12,6 +12,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
 
 public abstract class CustomTraderTest {
     protected CustomTraderObjectsFactory factory;
@@ -56,5 +57,13 @@ public abstract class CustomTraderTest {
     @AfterEach
     void tearDown() {
         cleanUp();
+    }
+
+    protected static void execute(CustomTraderDatabase.Execute execute) {
+        try {
+            ReflectionUtil.callPrivateMethod(null, CustomTraderDatabase.class.getDeclaredMethod("execute", CustomTraderDatabase.Execute.class), execute);
+        } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

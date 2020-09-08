@@ -29,7 +29,7 @@ public class CurrencyTraderTradingWindowTests extends CustomTraderTest {
         currency = ItemList.medallionHota;
         trader = factory.createNewCurrencyTrader(currency, 1);
         assert trader.getShop() != null;
-        CustomTraderDatabase.addStockItemTo(trader, 5, 5, 5, (byte)0, (byte)0, 5, new Enchantment[0], 5, 5, 0);
+        CustomTraderDatabase.addStockItemTo(trader, 5, 5, 5, (byte)0, (byte)0, 5, new Enchantment[0], (byte)0, 5, 5, 0);
         CustomTraderDatabase.restock(trader);
         trade = new CurrencyTraderTrade(player, trader);
         player.setTrade(trade);

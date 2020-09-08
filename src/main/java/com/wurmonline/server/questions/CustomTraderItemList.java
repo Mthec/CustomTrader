@@ -85,7 +85,7 @@ public class CustomTraderItemList extends CustomTraderQuestionExtension {
                              .If(tag.isEmpty(),
                                   b -> b.text(trader.getName() + "'s item list."),
                                   b -> b.text("Item list for traders with tag '" + tag + "'."))
-                             .table(new String[] { "Item", "QL", "Price", "Weight", "Enchants", "Max.", "Rate", "Interval", "Remove?" }, Arrays.asList(stock),
+                             .table(new String[] { "Item", "QL", "Price", "Weight", "Enchants", "Aux", "Max.", "Rate", "Interval", "Remove?" }, Arrays.asList(stock),
                                      (item, b) -> {
                                      ItemTemplate template;
                                      try {
@@ -104,6 +104,7 @@ public class CustomTraderItemList extends CustomTraderQuestionExtension {
                                              .label((paymentType == PaymentType.currency) ? String.valueOf(item.item.price) : new Change(item.item.price).getChangeShortString())
                                              .label(WeightHelper.toString(item.item.weight))
                                              .label(String.valueOf(item.item.enchantments.length))
+                                             .label(String.valueOf(item.item.aux))
                                              .label(String.valueOf(item.maxNum))
                                              .label((item.restockInterval == 0) ? "N/A" : String.valueOf(item.restockRate))
                                              .label(timeFormat(item.restockInterval))
@@ -115,7 +116,7 @@ public class CustomTraderItemList extends CustomTraderQuestionExtension {
                                                   .button("cancel", "Cancel"))
                              .build();
 
-        getResponder().getCommunicator().sendBml(400, 400, true, true, bml, 200, 200, 200, title);
+        getResponder().getCommunicator().sendBml(450, 400, true, true, bml, 200, 200, 200, title);
     }
 
     private String timeFormat(int hours) {
