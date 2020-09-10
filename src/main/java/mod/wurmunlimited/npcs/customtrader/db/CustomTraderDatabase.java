@@ -18,6 +18,7 @@ import mod.wurmunlimited.npcs.customtrader.stock.StockInfo;
 import mod.wurmunlimited.npcs.customtrader.stock.StockItem;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.File;
 import java.sql.*;
 import java.time.Clock;
 import java.util.ArrayList;
@@ -30,6 +31,7 @@ import java.util.logging.Logger;
 public class CustomTraderDatabase {
     private static final Logger logger = Logger.getLogger(CustomTraderDatabase.class.getName());
     private static String dbString = "";
+    public static String tagDumpDbString = "mods/customtrader/tags.db";
     private static boolean created = false;
     private static Clock clock = Clock.systemUTC();
 
@@ -133,6 +135,28 @@ public class CustomTraderDatabase {
                 e1.printStackTrace();
             }
         }
+    }
+
+    public static void loadTags() throws SQLException {
+        File file = new File(tagDumpDbString);
+        if (file.exists()) {
+            execute(db -> {
+                db.prepareStatement("ATTACH DATABASE '" + tagDumpDbString + "' AS dump;").execute();
+                db.prepareStatement("INSERT OR IGNORE INTO main.tag_stock SELECT * FROM dump.tag_stock;").execute();
+                db.prepareStatement("DETACH dump;").execute();
+            });
+        }
+    }
+
+    public static void dumpTags() throws SQLException {
+        Connection db2 = DriverManager.getConnection("jdbc:sqlite:" + tagDumpDbString);
+        db2.close();
+        execute(db -> {
+            db.prepareStatement("ATTACH DATABASE '" + tagDumpDbString + "' AS dump;").execute();
+            db.prepareStatement("DROP TABLE IF EXISTS dump.tag_stock;").execute();
+            db.prepareStatement("CREATE TABLE dump.tag_stock AS SELECT * FROM main.tag_stock;").execute();
+            db.prepareStatement("DETACH dump;").execute();
+        });
     }
 
     // Custom Trader

@@ -6,15 +6,13 @@ import com.wurmonline.server.spells.Spells;
 import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
 import mod.wurmunlimited.npcs.customtrader.stock.Enchantment;
 import mod.wurmunlimited.npcs.customtrader.stock.StockInfo;
+import mod.wurmunlimited.npcs.customtrader.stock.StockItem;
 import org.gotti.wurmunlimited.modloader.ReflectionUtil;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.List;
 
 import static mod.wurmunlimited.npcs.customtrader.CustomTraderDatabaseAssertions.*;
@@ -423,5 +421,156 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
             rs = db.prepareStatement("PRAGMA table_info('tag_stock');").executeQuery();
             assertTrue(hasAuxColumn(rs));
         });
+    }
+
+    @Test
+    void testDumpTagsToDb() throws SQLException, CustomTraderDatabase.StockUpdateException {
+        int num = 5;
+        byte b = 2;
+        Creature trader = factory.createNewCustomTrader("tag");
+
+        CustomTraderDatabase.tagDumpDbString = "sqlite/tags.db";
+        CustomTraderDatabase.addStockItemTo("tag", num, num, num, b, b, num, new Enchantment[0], b, num, num, num);
+        CustomTraderDatabase.addStockItemTo("tag", num + 1, num + 1, num + 1, b, b, num + 1, new Enchantment[0], b, num + 1, num + 1, num + 1);
+        CustomTraderDatabase.dumpTags();
+
+        StockInfo[] stock = CustomTraderDatabase.getStockFor(trader);
+
+        execute(db -> {
+            db.prepareStatement("ATTACH DATABASE '" + CustomTraderDatabase.tagDumpDbString + "' AS dump;").execute();
+
+            ResultSet rs = db.prepareStatement("SELECT * FROM dump.tag_stock;").executeQuery();
+
+            while (rs.next()) {
+                assertEquals("tag", rs.getString(1));
+                StockInfo dumped = new StockInfo(new StockItem(
+                        rs.getInt(2),
+                        rs.getFloat(3),
+                        rs.getInt(4),
+                        (byte)rs.getInt(5),
+                        (byte)rs.getInt(6),
+                        rs.getInt(7),
+                        Enchantment.parseEnchantments(rs.getString(8)),
+                        rs.getByte(12)),
+                        rs.getInt(9),
+                        rs.getInt(10),
+                        rs.getInt(11));
+
+                StockInfo original = stock[0];
+                if (original.item.templateId != dumped.item.templateId)
+                    original = stock[1];
+
+                assertEquals(original.item.templateId, dumped.item.templateId);
+                assertEquals(original.item.ql, dumped.item.ql, 0.00001f);
+                assertEquals(original.item.price, dumped.item.price);
+                assertEquals(original.item.material, dumped.item.material);
+                assertEquals(original.item.rarity, dumped.item.rarity);
+                assertEquals(original.item.weight, dumped.item.weight);
+                assertArrayEquals(original.item.enchantments, dumped.item.enchantments);
+                assertEquals(original.item.aux, dumped.item.aux);
+                assertEquals(original.maxNum, dumped.maxNum);
+                assertEquals(original.restockRate, dumped.restockRate);
+                assertEquals(original.restockInterval, dumped.restockInterval);
+            }
+
+            db.prepareStatement("DETACH dump;").execute();
+        });
+    }
+
+    private void createTagsDump(int num, byte b) throws SQLException {
+        Connection db = null;
+        try {
+            db = DriverManager.getConnection("jdbc:sqlite:" + CustomTraderDatabase.tagDumpDbString);
+
+            db.prepareStatement("CREATE TABLE IF NOT EXISTS tag_stock (" +
+                                        "tag TEXT," +
+                                        "template_id INTEGER," +
+                                        "ql REAL," +
+                                        "price INTEGER," +
+                                        "material INTEGER," +
+                                        "rarity INTEGER," +
+                                        "weight INTEGER," +
+                                        "enchantments TEXT," +
+                                        "max_num INTEGER," +
+                                        "restock_rate INTEGER," +
+                                        "restock_interval INTEGER," +
+                                        "aux INTEGER," +
+                                        "UNIQUE(tag, template_id, ql, material, rarity, weight, enchantments) ON CONFLICT REPLACE" +
+                                        ");").execute();
+            PreparedStatement ps = db.prepareStatement("INSERT INTO tag_stock VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            ps.setString(1, "tag");
+            ps.setInt(2, num);
+            ps.setFloat(3, num);
+            ps.setInt(4, num);
+            ps.setByte(5, b);
+            ps.setByte(6, b);
+            ps.setInt(7, num);
+            ps.setString(8, "");
+            ps.setInt(9, num);
+            ps.setInt(10, num);
+            ps.setInt(11, num);
+            ps.setByte(12, b);
+            ps.execute();
+        } finally {
+            if (db != null)
+                db.close();
+        }
+    }
+
+    @Test
+    void testLoadTagsLoadsSuccessfully() throws SQLException {
+        int num = 6;
+        byte b = 1;
+        Creature trader = factory.createNewCustomTrader("tag");
+        CustomTraderDatabase.tagDumpDbString = "sqlite/tags.db";
+        createTagsDump(num, b);
+
+        CustomTraderDatabase.loadTags();
+
+        StockInfo[] stock = CustomTraderDatabase.getStockFor(trader);
+
+        assertEquals(1, stock.length);
+        StockInfo dumped = stock[0];
+        assertEquals(num, dumped.item.templateId);
+        assertEquals(num, dumped.item.ql, 0.00001f);
+        assertEquals(num, dumped.item.price);
+        assertEquals(b, dumped.item.material);
+        assertEquals(b, dumped.item.rarity);
+        assertEquals(num, dumped.item.weight);
+        assertEquals(b, dumped.item.aux);
+        assertEquals(num, dumped.maxNum);
+        assertEquals(num, dumped.restockRate);
+        assertEquals(num, dumped.restockInterval);
+    }
+
+    @Test
+    void testLoadTagsDoesNotDelete() throws SQLException, CustomTraderDatabase.StockUpdateException {
+        int num = 6;
+        byte b = 1;
+        Creature trader = factory.createNewCustomTrader("tag");
+        CustomTraderDatabase.tagDumpDbString = "sqlite/tags.db";
+        createTagsDump(num, b);
+
+        CustomTraderDatabase.addStockItemTo("tag", num + 1, num + 1, num + 1, b, b, num + 1, new Enchantment[0], b, num + 1, num + 1, num + 1);
+        CustomTraderDatabase.loadTags();
+
+        StockInfo[] stock = CustomTraderDatabase.getStockFor(trader);
+        assertEquals(2, stock.length);
+
+        if (stock[0].item.templateId == num) {
+            assertEquals(num, stock[0].item.templateId);
+            assertEquals(num + 1, stock[1].item.templateId);
+        } else {
+            assertEquals(num, stock[1].item.templateId);
+            assertEquals(num + 1, stock[0].item.templateId);
+        }
+    }
+
+    @Test
+    void testTagsDumpDoesNotExist() {
+        CustomTraderDatabase.tagDumpDbString = "sqlite/tags.db";
+        assert !new File(CustomTraderDatabase.tagDumpDbString).exists();
+
+        assertDoesNotThrow(CustomTraderDatabase::loadTags);
     }
 }

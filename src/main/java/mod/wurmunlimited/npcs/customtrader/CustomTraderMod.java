@@ -6,6 +6,7 @@ import com.wurmonline.server.behaviours.CurrencyTraderTradeAction;
 import com.wurmonline.server.behaviours.ManageCustomTraderAction;
 import com.wurmonline.server.behaviours.PlaceCurrencyTraderAction;
 import com.wurmonline.server.behaviours.PlaceCustomTraderAction;
+import com.wurmonline.server.creatures.Communicator;
 import com.wurmonline.server.creatures.Creature;
 import com.wurmonline.server.creatures.CreatureTemplate;
 import com.wurmonline.server.creatures.TradeHandler;
@@ -31,10 +32,13 @@ import org.gotti.wurmunlimited.modsupport.creatures.ModCreatures;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.logging.Logger;
 
-public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable, Initable, ServerStartedListener {
+public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable, Initable, ServerStartedListener, PlayerMessageListener {
+    private static final Logger logger = Logger.getLogger(CustomTraderMod.class.getName());
     public static final int maxTagLength = 25;
     public static String namePrefix = "Trader";
     private boolean preventDecay = true;
@@ -126,6 +130,13 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
         ModActions.registerAction(new ManageCustomTraderAction());
         ModActions.registerAction(new PlaceCustomTraderAction());
         ModActions.registerAction(new PlaceCurrencyTraderAction());
+
+        try {
+            CustomTraderDatabase.loadTags();
+        } catch (SQLException e) {
+            logger.warning("An error occurred when loading tags from dump.");
+            e.printStackTrace();
+        }
     }
 
     Object poll(Object o, Method method, Object[] args) throws InvocationTargetException, IllegalAccessException {
@@ -256,5 +267,31 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
 
     private boolean isSpecialTrader(Creature trader) {
         return CustomTraderTemplate.isCustomTrader(trader) || CurrencyTraderTemplate.isCurrencyTrader(trader);
+    }
+
+    @Override
+    public MessagePolicy onPlayerMessage(Communicator communicator, String message, String title) {
+        Player player = communicator.getPlayer();
+
+        if (player != null && player.getPower() >= 2) {
+            if (message.equals("/dumptags")) {
+                try {
+                    CustomTraderDatabase.dumpTags();
+                    communicator.sendSafeServerMessage("Custom Trader tags were successfully dumped.");
+                } catch (SQLException e) {
+                    communicator.sendAlertServerMessage("An error occurred when dumping tags.");
+                    e.printStackTrace();
+                }
+
+                return MessagePolicy.DISCARD;
+            }
+        }
+
+        return MessagePolicy.PASS;
+    }
+
+    @Override
+    public boolean onPlayerMessage(Communicator communicator, String s) {
+        return false;
     }
 }

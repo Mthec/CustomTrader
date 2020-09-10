@@ -40,6 +40,11 @@ public abstract class CustomTraderTest {
             //noinspection ResultOfMethodCallIgnored
             file.delete();
         }
+        file = new File("sqlite/tags.db");
+        if (file.exists()) {
+            //noinspection ResultOfMethodCallIgnored
+            file.delete();
+        }
 
         try {
             ReflectionUtil.setPrivateField(null, CustomTraderDatabase.class.getDeclaredField("created"), false);
