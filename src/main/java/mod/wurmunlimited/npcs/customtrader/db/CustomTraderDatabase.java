@@ -608,8 +608,7 @@ public class CustomTraderDatabase {
         Map<StockItem, Integer> items = Helper.getInventoryFor(trader);
 
         for (StockInfo stockInfo : getStockFor(trader)) {
-            long timeSinceLastRestock = clock.millis() - getLastRestocked(trader, stockInfo.item);
-            if (stockInfo.restockInterval == 0 || timeSinceLastRestock >= stockInfo.restockInterval * TimeConstants.HOUR_MILLIS) {
+            if (stockInfo.restockInterval == 0 || (clock.millis() - getLastRestocked(trader, stockInfo.item)) >= stockInfo.restockInterval * TimeConstants.HOUR_MILLIS) {
                 int amount = Math.max(0, stockInfo.maxNum - items.getOrDefault(stockInfo.item, 0));
 
                 if (stockInfo.restockRate != 0)
