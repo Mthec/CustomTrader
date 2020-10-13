@@ -22,6 +22,7 @@ import java.io.File;
 import java.sql.*;
 import java.time.Clock;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -34,6 +35,7 @@ public class CustomTraderDatabase {
     public static String tagDumpDbString = "mods/customtrader/tags.db";
     private static boolean created = false;
     private static Clock clock = Clock.systemUTC();
+    private static final Map<Creature, String> tags = new HashMap<>();
 
     public interface Execute {
 
@@ -144,6 +146,7 @@ public class CustomTraderDatabase {
                 db.prepareStatement("ATTACH DATABASE '" + tagDumpDbString + "' AS dump;").execute();
                 db.prepareStatement("INSERT OR IGNORE INTO main.tag_stock SELECT * FROM dump.tag_stock;").execute();
                 db.prepareStatement("DETACH dump;").execute();
+                tags.clear();
             });
         }
     }
@@ -274,6 +277,8 @@ public class CustomTraderDatabase {
                 ps.setLong(2, trader.getWurmId());
 
                 ps.execute();
+
+                tags.put(trader, tag);
             });
         } catch (SQLException e) {
             logger.warning("Failed to update tag for trader.");
@@ -303,6 +308,8 @@ public class CustomTraderDatabase {
                 ps.setString(1, tag);
 
                 ps.execute();
+
+                tags.entrySet().removeIf(e -> e.getValue().equals(tag));
             });
         } catch (SQLException e) {
             logger.warning("Failed to delete tag.");
@@ -331,6 +338,8 @@ public class CustomTraderDatabase {
                 ps.setString(2, from);
 
                 ps.execute();
+
+                tags.entrySet().removeIf(e -> e.getValue().equals(from));
             });
         } catch (SQLException e) {
             logger.warning("Failed to update tag for trader.");
@@ -340,6 +349,11 @@ public class CustomTraderDatabase {
     }
 
     public static String getTagFor(Creature trader) {
+        String possibleTag = tags.get(trader);
+        if (possibleTag != null) {
+            return possibleTag;
+        }
+
         AtomicReference<String> tag = new AtomicReference<>(null);
 
         try {
@@ -362,6 +376,7 @@ public class CustomTraderDatabase {
         }
 
         String tagString = tag.get();
+        tags.put(trader, tagString);
 
         if (tagString != null)
             return tagString;
@@ -614,7 +629,8 @@ public class CustomTraderDatabase {
                 if (stockInfo.restockRate != 0)
                     amount = Math.min(amount, stockInfo.restockRate);
 
-                restockItem(trader, stockInfo, amount);
+                if (amount != 0)
+                    restockItem(trader, stockInfo, amount);
             }
         }
     }
