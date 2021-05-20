@@ -6,6 +6,7 @@ import com.wurmonline.server.Items;
 import com.wurmonline.server.TimeConstants;
 import com.wurmonline.server.creatures.Creature;
 import com.wurmonline.server.creatures.Creatures;
+import com.wurmonline.server.creatures.NoSuchCreatureException;
 import com.wurmonline.server.items.Item;
 import com.wurmonline.server.items.ItemFactory;
 import com.wurmonline.server.items.ItemSpellEffects;
@@ -34,12 +35,16 @@ public class CustomTraderDatabase {
     private static String dbString = "";
     public static String tagDumpDbString = "mods/customtrader/tags.db";
     private static boolean created = false;
-    private static Clock clock = Clock.systemUTC();
+    public static Clock clock = Clock.systemUTC();
     private static final Map<Creature, String> tags = new HashMap<>();
 
     public interface Execute {
 
         void run(Connection db) throws SQLException;
+    }
+
+    public enum RestockTag {
+        SUCCESS, NO_TRADERS_FOUND, NO_TAG_RECEIVED, NO_STOCK_FOR_TAG
     }
 
     public static class StockUpdateException extends WurmServerException {
@@ -139,6 +144,7 @@ public class CustomTraderDatabase {
         }
     }
 
+    @SuppressWarnings({"SqlResolve", "SqlInsertValues"})
     public static void loadTags() throws SQLException {
         File file = new File(tagDumpDbString);
         if (file.exists()) {
@@ -151,6 +157,7 @@ public class CustomTraderDatabase {
         }
     }
 
+    @SuppressWarnings("SqlResolve")
     public static void dumpTags() throws SQLException {
         Connection db2 = DriverManager.getConnection("jdbc:sqlite:" + tagDumpDbString);
         db2.close();
@@ -411,6 +418,33 @@ public class CustomTraderDatabase {
         return tags;
     }
 
+    private static List<Creature> getTradersWithTag(String tag) {
+        List<Creature> traders = new ArrayList<>();
+
+        try {
+            execute(db -> {
+                PreparedStatement ps = db.prepareStatement("SELECT id FROM traders WHERE tag=?");
+                ps.setString(1, tag);
+                ResultSet rs = ps.executeQuery();
+
+                while (rs.next()) {
+                    long id = rs.getLong(1);
+                    try {
+                        traders.add(Creatures.getInstance().getCreature(id));
+                    } catch (NoSuchCreatureException e) {
+                        logger.warning("Creature (" + id + ") not found when getting traders with tag (" + tag + ").");
+                        e.printStackTrace();
+                    }
+                }
+            });
+        } catch (SQLException e) {
+            logger.warning("Error when getting traders with tag (" + tag + ").");
+            e.printStackTrace();
+        }
+
+        return traders;
+    }
+
     public static StockInfo[] getStockFor(Creature trader) {
         return getStockFor(getTagFor(trader), trader);
     }
@@ -472,17 +506,7 @@ public class CustomTraderDatabase {
             execute(db -> {
                 PreparedStatement ps = db.prepareStatement("INSERT INTO trader_stock VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 ps.setLong(1, trader.getWurmId());
-                ps.setInt(2, templateId);
-                ps.setFloat(3, ql);
-                ps.setInt(4, price);
-                ps.setByte(5, material);
-                ps.setByte(6, rarity);
-                ps.setInt(7, weight);
-                ps.setString(8, Enchantment.toSaveString(enchantments));
-                ps.setInt(9, maxStock);
-                ps.setInt(10, restockRate);
-                ps.setInt(11, restockInterval);
-                ps.setByte(12, aux);
+                setStockValues(templateId, ql, price, material, rarity, weight, enchantments, aux, maxStock, restockRate, restockInterval, ps);
                 ps.execute();
             });
         } catch (SQLException e) {
@@ -498,17 +522,7 @@ public class CustomTraderDatabase {
             execute(db -> {
                 PreparedStatement ps = db.prepareStatement("INSERT INTO tag_stock VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 ps.setString(1, tag);
-                ps.setInt(2, templateId);
-                ps.setFloat(3, ql);
-                ps.setInt(4, price);
-                ps.setByte(5, material);
-                ps.setByte(6, rarity);
-                ps.setInt(7, weight);
-                ps.setString(8, Enchantment.toSaveString(enchantments));
-                ps.setInt(9, maxStock);
-                ps.setInt(10, restockRate);
-                ps.setInt(11, restockInterval);
-                ps.setByte(12, aux);
+                setStockValues(templateId, ql, price, material, rarity, weight, enchantments, aux, maxStock, restockRate, restockInterval, ps);
                 ps.execute();
             });
         } catch (SQLException e) {
@@ -517,6 +531,20 @@ public class CustomTraderDatabase {
             e.printStackTrace();
             throw new StockUpdateException(msg);
         }
+    }
+
+    private static void setStockValues(int templateId, float ql, int price, byte material, byte rarity, int weight, Enchantment[] enchantments, byte aux, int maxStock, int restockRate, int restockInterval, PreparedStatement ps) throws SQLException {
+        ps.setInt(2, templateId);
+        ps.setFloat(3, ql);
+        ps.setInt(4, price);
+        ps.setByte(5, material);
+        ps.setByte(6, rarity);
+        ps.setInt(7, weight);
+        ps.setString(8, Enchantment.toSaveString(enchantments));
+        ps.setInt(9, maxStock);
+        ps.setInt(10, restockRate);
+        ps.setInt(11, restockInterval);
+        ps.setByte(12, aux);
     }
 
     public static void removeStockItemFrom(Creature trader, StockInfo stockInfo) throws StockUpdateException {
@@ -633,6 +661,28 @@ public class CustomTraderDatabase {
                     restockItem(trader, stockInfo, amount);
             }
         }
+    }
+
+    public static RestockTag fullyStock(String tag) {
+        if (tag == null || tag.isEmpty()) {
+            return RestockTag.NO_TAG_RECEIVED;
+        }
+
+        StockInfo[] stock = getStockFor(tag, null);
+        if (stock.length == 0) {
+            return RestockTag.NO_STOCK_FOR_TAG;
+        }
+
+        List<Creature> traders = getTradersWithTag(tag);
+        if (traders.isEmpty()) {
+            return RestockTag.NO_TRADERS_FOUND;
+        }
+
+        for (Creature trader : traders) {
+            fullyStock(trader);
+        }
+
+        return RestockTag.SUCCESS;
     }
 
     public static void fullyStock(Creature trader) {

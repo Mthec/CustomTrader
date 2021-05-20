@@ -1,0 +1,12 @@
+# Project exclude paths
+/.gradle/
+/build/
+/build/classes/java/main/
+/build/classes/java/test/
+/sqlite/
+/gradle/
+/.idea/
+/gradlew.bat
+/gradlew
+/wurmtemplates.db
+/currencytrader*.log

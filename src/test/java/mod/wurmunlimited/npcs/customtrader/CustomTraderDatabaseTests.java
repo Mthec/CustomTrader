@@ -17,9 +17,10 @@ import java.util.List;
 
 import static mod.wurmunlimited.npcs.customtrader.CustomTraderDatabaseAssertions.*;
 import static mod.wurmunlimited.npcs.customtrader.DatabaseActions.select;
-import static org.junit.Assert.*;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 
+@SuppressWarnings("SqlResolve")
 public class CustomTraderDatabaseTests extends CustomTraderTest {
 
     @Test
@@ -478,10 +479,7 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
     }
 
     private void createTagsDump(int num, byte b) throws SQLException {
-        Connection db = null;
-        try {
-            db = DriverManager.getConnection("jdbc:sqlite:" + CustomTraderDatabase.tagDumpDbString);
-
+        try (Connection db = DriverManager.getConnection("jdbc:sqlite:" + CustomTraderDatabase.tagDumpDbString)) {
             db.prepareStatement("CREATE TABLE IF NOT EXISTS tag_stock (" +
                                         "tag TEXT," +
                                         "template_id INTEGER," +
@@ -511,9 +509,6 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
             ps.setInt(11, num);
             ps.setByte(12, b);
             ps.execute();
-        } finally {
-            if (db != null)
-                db.close();
         }
     }
 
@@ -572,5 +567,49 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
         assert !new File(CustomTraderDatabase.tagDumpDbString).exists();
 
         assertDoesNotThrow(CustomTraderDatabase::loadTags);
+    }
+
+    @Test
+    void testFullyRestockTag() throws CustomTraderDatabase.StockUpdateException {
+        int num = 6;
+        byte b = 1;
+        String tag = "myTag";
+        Creature trader = factory.createNewCustomTrader(tag);
+        CustomTraderDatabase.addStockItemTo(tag, 1, num, num, b, b, num, new Enchantment[0], (byte)0, num, num, num);
+
+        assertEquals(CustomTraderDatabase.RestockTag.SUCCESS, CustomTraderDatabase.fullyStock(tag));
+        assertEquals(num, trader.getInventory().getItemCount());
+    }
+
+    @Test
+    void testFullyRestockTagEmptyTag() throws CustomTraderDatabase.StockUpdateException {
+        int num = 6;
+        byte b = 1;
+        String tag = "myTag";
+        Creature trader = factory.createNewCustomTrader(tag);
+        CustomTraderDatabase.addStockItemTo(tag, 1, num, num, b, b, num, new Enchantment[0], (byte)0, num, num, num);
+
+        assertEquals(CustomTraderDatabase.RestockTag.NO_TAG_RECEIVED, CustomTraderDatabase.fullyStock(""));
+        assertEquals(0, trader.getInventory().getItemCount());
+    }
+
+    @Test
+    void testFullyRestockTagNoStock() throws CustomTraderDatabase.StockUpdateException {
+        int num = 6;
+        byte b = 1;
+        String tag = "myTag";
+        Creature trader = factory.createNewCustomTrader(tag);
+
+        assertEquals(CustomTraderDatabase.RestockTag.NO_STOCK_FOR_TAG, CustomTraderDatabase.fullyStock(tag));
+        assertEquals(0, trader.getInventory().getItemCount());
+    }
+
+    @Test
+    void testFullyRestockTagNoTraders() throws CustomTraderDatabase.StockUpdateException {
+        int num = 6;
+        byte b = 1;
+        String tag = "myTag";
+
+        assertEquals(CustomTraderDatabase.RestockTag.NO_STOCK_FOR_TAG, CustomTraderDatabase.fullyStock(tag));
     }
 }

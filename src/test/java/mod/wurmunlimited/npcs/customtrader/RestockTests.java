@@ -8,7 +8,6 @@ import com.wurmonline.server.spells.SpellEffect;
 import com.wurmonline.server.spells.Spells;
 import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
 import mod.wurmunlimited.npcs.customtrader.stock.Enchantment;
-import org.gotti.wurmunlimited.modloader.ReflectionUtil;
 import org.junit.jupiter.api.Test;
 
 import java.time.Clock;
@@ -175,7 +174,7 @@ public class RestockTests extends CustomTraderTest {
         CustomTraderDatabase.restock(trader);
         assertEquals(1, trader.getInventory().getItems().size());
 
-        ReflectionUtil.setPrivateField(null, CustomTraderDatabase.class.getDeclaredField("clock"), Clock.fixed(Instant.now().plusMillis(time * TimeConstants.HOUR_MILLIS), ZoneOffset.UTC));
+        CustomTraderDatabase.clock = Clock.fixed(Instant.now().plusMillis(time * TimeConstants.HOUR_MILLIS), ZoneOffset.UTC);
         CustomTraderDatabase.restock(trader);
         assertEquals(2, trader.getInventory().getItems().size());
         assertAllItemsMatch(trader, num, b);

@@ -1,6 +1,7 @@
 package mod.wurmunlimited.npcs.customtrader;
 
 import com.wurmonline.server.Items;
+import com.wurmonline.server.TimeConstants;
 import com.wurmonline.server.WurmCalendar;
 import com.wurmonline.server.behaviours.CurrencyTraderTradeAction;
 import com.wurmonline.server.behaviours.ManageCustomTraderAction;
@@ -42,6 +43,7 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
     public static final int maxTagLength = 25;
     public static String namePrefix = "Trader";
     private boolean preventDecay = true;
+    private final CommandWaitTimer restockTimer = new CommandWaitTimer(TimeConstants.MINUTE_MILLIS);
 
     @Override
     public void configure(Properties properties) {
@@ -281,6 +283,32 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
                 } catch (SQLException e) {
                     communicator.sendAlertServerMessage("An error occurred when dumping tags.");
                     e.printStackTrace();
+                }
+
+                return MessagePolicy.DISCARD;
+            } else if (message.startsWith("/restock")) {
+                String timeRemaining = restockTimer.timeRemaining();
+                if (timeRemaining.isEmpty()) {
+                    String tag = message.replace("/restock", "").trim();
+
+                    switch (CustomTraderDatabase.fullyStock(tag)) {
+                        case SUCCESS:
+                            player.getCommunicator().sendNormalServerMessage("All " + tag + " traders were restocked.");
+                            break;
+                        case NO_TRADERS_FOUND:
+                            player.getCommunicator().sendNormalServerMessage("No traders were found with that tag.");
+                            break;
+                        case NO_TAG_RECEIVED:
+                            player.getCommunicator().sendSafeServerMessage("You need to provide a tag to restock.");
+                            break;
+                        case NO_STOCK_FOR_TAG:
+                            player.getCommunicator().sendNormalServerMessage("No stock was found for that tag.");
+                            break;
+                    }
+
+                    restockTimer.reset();
+                } else {
+                    player.getCommunicator().sendNormalServerMessage("You need to wait " + timeRemaining + " before /restock can be used again.");
                 }
 
                 return MessagePolicy.DISCARD;

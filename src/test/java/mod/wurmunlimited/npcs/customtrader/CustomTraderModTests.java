@@ -11,7 +11,9 @@ import com.wurmonline.server.questions.CreatureCreationQuestion;
 import com.wurmonline.server.questions.Question;
 import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
 import mod.wurmunlimited.npcs.customtrader.stock.Enchantment;
+import mod.wurmunlimited.npcs.customtrader.stock.StockInfo;
 import org.gotti.wurmunlimited.modloader.ReflectionUtil;
+import org.gotti.wurmunlimited.modloader.interfaces.MessagePolicy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
@@ -22,6 +24,7 @@ import java.util.List;
 import java.util.Properties;
 
 import static mod.wurmunlimited.Assert.didNotReceiveMessageContaining;
+import static mod.wurmunlimited.Assert.receivedMessageContaining;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -214,7 +217,7 @@ public class CustomTraderModTests extends CustomTraderTest {
 
         InvocationHandler handler = new CustomTraderMod()::creatureCreation;
         Method method = mock(Method.class);
-        Object[] args = new Object[] { new CreatureCreationQuestion(gm, "", "", wand.getWurmId(), tileX, tileY, -1, -10)};
+        Object[] args = new Object[] { new CreatureCreationQuestion(gm, "", "", wand.getWurmId(), tileX, tileY, -1, -10) };
         ((CreatureCreationQuestion)args[0]).sendQuestion();
         int templateIndex = -1;
         int i = 0;
@@ -274,5 +277,98 @@ public class CustomTraderModTests extends CustomTraderTest {
         verify(method, times(1)).invoke(null, args);
         assertEquals(0, factory.getAllCreatures().size());
         assertThat(gm, didNotReceiveMessageContaining("An error occurred"));
+    }
+
+    @Test
+    void testOnPlayerMessageRestock() throws Throwable {
+        Player gm = factory.createNewPlayer();
+        gm.setPower((byte)2);
+        new OnPlayerMessageReceiver(r -> {
+            assertEquals(MessagePolicy.DISCARD, r.mod.onPlayerMessage(gm.getCommunicator(), "/restock " + OnPlayerMessageReceiver.tag, "Local"));
+            assertThat(gm, receivedMessageContaining("were restocked"));
+
+            r.assertCount(5);
+        });
+    }
+
+    @Test
+    void testOnPlayerMessageRestockNoTraders() throws Throwable {
+        Player gm = factory.createNewPlayer();
+        gm.setPower((byte)2);
+        new OnPlayerMessageReceiver(r -> {
+
+            assertEquals(MessagePolicy.DISCARD, r.mod.onPlayerMessage(gm.getCommunicator(), "/restock blah", "Local"));
+            assertThat(gm, receivedMessageContaining("no traders"));
+
+            r.assertCount(0);
+        });
+    }
+
+    @Test
+    void testOnPlayerMessageRestockNeedTag() throws Throwable {
+        Player gm = factory.createNewPlayer();
+        gm.setPower((byte)2);
+        new OnPlayerMessageReceiver(r -> {
+            assertEquals(MessagePolicy.DISCARD, r.mod.onPlayerMessage(gm.getCommunicator(), "/restock", "Local"));
+            assertThat(gm, receivedMessageContaining("need to provide a tag"));
+
+            r.assertCount(0);
+        });
+    }
+
+    @Test
+    void testOnPlayerMessageRestockNoStock() throws Throwable {
+        Player gm = factory.createNewPlayer();
+        gm.setPower((byte)2);
+        new OnPlayerMessageReceiver(r -> {
+            StockInfo[] stockInfo = CustomTraderDatabase.getStockFor(r.traderTagged);
+            try {
+                for (StockInfo stock : stockInfo) {
+                    CustomTraderDatabase.removeStockItemFrom(r.traderTagged, stock);
+                }
+            } catch (CustomTraderDatabase.StockUpdateException e) {
+                throw new RuntimeException(e);
+            }
+
+            assertEquals(MessagePolicy.DISCARD, r.mod.onPlayerMessage(gm.getCommunicator(), "/restock " + OnPlayerMessageReceiver.tag, "Local"));
+            assertThat(gm, receivedMessageContaining("no stock"));
+
+            r.assertCount(0);
+        });
+    }
+
+    @Test
+    void testOnPlayerMessageNoRepeatRestock() throws Throwable {
+        Player gm = factory.createNewPlayer();
+        gm.setPower((byte)2);
+        new OnPlayerMessageReceiver(r -> {
+            assertEquals(MessagePolicy.DISCARD, r.mod.onPlayerMessage(gm.getCommunicator(), "/restock " + OnPlayerMessageReceiver.tag, "Local"));
+            assertThat(gm, receivedMessageContaining("were restocked"));
+
+            r.assertCount(5);
+
+            r.traderTagged.getInventory().removeAndEmpty();
+
+            assertEquals(MessagePolicy.DISCARD, r.mod.onPlayerMessage(gm.getCommunicator(), "/restock " + OnPlayerMessageReceiver.tag, "Local"));
+            assertThat(gm, receivedMessageContaining("need to wait"));
+
+            r.assertCount(0);
+        });
+    }
+
+    @Test
+    void testOnPlayerMessageRestockMultiple() throws Throwable {
+        Player gm = factory.createNewPlayer();
+        gm.setPower((byte)2);
+        new OnPlayerMessageReceiver(r -> {
+            Creature anotherTraderTagged = factory.createNewCustomTrader(OnPlayerMessageReceiver.tag);
+            r.addStockTo(anotherTraderTagged);
+
+            assertEquals(MessagePolicy.DISCARD, r.mod.onPlayerMessage(gm.getCommunicator(), "/restock " + OnPlayerMessageReceiver.tag, "Local"));
+            assertThat(gm, receivedMessageContaining("were restocked"));
+
+            r.assertCount(5);
+            assertEquals(5, anotherTraderTagged.getInventory().getItemCount());
+        });
     }
 }
