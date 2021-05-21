@@ -1,8 +1,11 @@
 package com.wurmonline.server.questions;
 
 import com.wurmonline.server.creatures.Creature;
+import com.wurmonline.server.creatures.FakeCreatureStatus;
 import com.wurmonline.server.items.Trade;
 import com.wurmonline.server.players.Player;
+import com.wurmonline.shared.util.StringUtilities;
+import mod.wurmunlimited.npcs.customtrader.CustomTraderMod;
 import mod.wurmunlimited.npcs.customtrader.CustomTraderTest;
 import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
 import mod.wurmunlimited.npcs.customtrader.stock.Enchantment;
@@ -46,6 +49,15 @@ public class CustomTraderManagementQuestionTests extends CustomTraderTest {
         assertThat(gm, receivedBMLContaining("tag1,tag2,tag3"));
     }
 
+    @Test
+    void testProperlyDePrefixesName() {
+        CustomTraderMod.namePrefix = "MyPrefix";
+        trader.setName("MyPrefix_Fred");
+        new CustomTraderManagementQuestion(gm, trader).sendQuestion();
+        assertThat(gm, receivedBMLContaining("Name: MyPrefix_"));
+        assertThat(gm, receivedBMLContaining("text=\"Fred\";id=\"name\";"));
+    }
+
     // answer
 
     @Test
@@ -53,6 +65,7 @@ public class CustomTraderManagementQuestionTests extends CustomTraderTest {
         assert CustomTraderDatabase.getTagFor(trader).equals("");
         CustomTraderDatabase.addStockItemTo(trader, 1, 1, 1, (byte)0, (byte)0, 1, new Enchantment[0], (byte)0, 1, 1, 1);
         CustomTraderDatabase.restock(trader);
+        String name = trader.getName();
 
         Properties properties = new Properties();
         properties.setProperty("confirm", "true");
@@ -61,6 +74,63 @@ public class CustomTraderManagementQuestionTests extends CustomTraderTest {
         assertEquals("", CustomTraderDatabase.getTagFor(trader));
         assertEquals(1, CustomTraderDatabase.getStockFor(trader).length);
         assertEquals(1, trader.getInventory().getItems().size());
+        assertEquals(name, trader.getName());
+    }
+
+    @Test
+    void testSetName() {
+        assert CustomTraderMod.namePrefix.equals("Trader");
+        String name = StringUtilities.raiseFirstLetter("MyName");
+        String newName = "Trader_" + name;
+        Properties properties = new Properties();
+        properties.setProperty("confirm", "true");
+        properties.setProperty("name", name);
+        new CustomTraderManagementQuestion(gm, trader).answer(properties);
+
+        assertEquals(newName, trader.getName());
+        assertEquals(newName, ((FakeCreatureStatus)trader.getStatus()).savedName);
+        assertThat(gm, receivedMessageContaining("will now be known as " + newName));
+    }
+
+    @Test
+    void testSetNameDifferentPrefix() {
+        CustomTraderMod.namePrefix = "MyPrefix";
+        String name = StringUtilities.raiseFirstLetter("MyName");
+        Properties properties = new Properties();
+        properties.setProperty("confirm", "true");
+        properties.setProperty("name", name);
+        new CustomTraderManagementQuestion(gm, trader).answer(properties);
+
+        assertEquals("MyPrefix_" + name, trader.getName());
+        assertThat(gm, receivedMessageContaining("will now be known as MyPrefix_" + name));
+    }
+
+    @Test
+    void testSetNameIllegalCharacters() {
+        assert CustomTraderMod.namePrefix.equals("Trader");
+        String name = trader.getName();
+        Properties properties = new Properties();
+        properties.setProperty("confirm", "true");
+        properties.setProperty("name", "%Name");
+        new CustomTraderManagementQuestion(gm, trader).answer(properties);
+
+        assertEquals(name, trader.getName());
+        assertThat(gm, receivedMessageContaining("shall remain " + name));
+    }
+
+    @Test
+    void testSetNameNoMessageOnSameName() {
+        assert CustomTraderMod.namePrefix.equals("Trader");
+        String name = "Name";
+        trader.setName("Trader_" + name);
+        Properties properties = new Properties();
+        properties.setProperty("confirm", "true");
+        properties.setProperty("name", name);
+        new CustomTraderManagementQuestion(gm, trader).answer(properties);
+
+        assertEquals("Trader_" + name, trader.getName());
+        assertThat(gm, didNotReceiveMessageContaining("will now be known as " + name));
+        assertThat(gm, didNotReceiveMessageContaining("will remain " + name));
     }
 
     @Test

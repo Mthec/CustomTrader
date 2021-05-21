@@ -1,6 +1,7 @@
 package com.wurmonline.server.questions;
 
 import com.wurmonline.server.creatures.Creature;
+import mod.wurmunlimited.npcs.customtrader.CustomTraderMod;
 
 @SuppressWarnings("SameParameterValue")
 public abstract class CustomTraderQuestionExtension extends Question {
@@ -48,5 +49,21 @@ public abstract class CustomTraderQuestionExtension extends Question {
             return f;
         }
         return _default;
+    }
+
+    String getPrefix() {
+        if (CustomTraderMod.namePrefix.isEmpty()) {
+            return "";
+        } else {
+            return CustomTraderMod.namePrefix + "_";
+        }
+    }
+
+    String getNameWithoutPrefix(String name) {
+        if (CustomTraderMod.namePrefix.isEmpty() || name.length() < CustomTraderMod.namePrefix.length() + 1) {
+            return name;
+        } else {
+            return name.substring(CustomTraderMod.namePrefix.length() + 1);
+        }
     }
 }

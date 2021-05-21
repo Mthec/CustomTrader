@@ -9,7 +9,6 @@ import com.wurmonline.shared.util.StringUtilities;
 import mod.wurmunlimited.bml.BMLBuilder;
 import mod.wurmunlimited.npcs.customtrader.CurrencyTraderTemplate;
 import mod.wurmunlimited.npcs.customtrader.CustomTraderMod;
-import mod.wurmunlimited.npcs.customtrader.CustomTraderTemplate;
 
 import java.util.Properties;
 import java.util.Random;
@@ -71,7 +70,7 @@ public class PlaceCurrencyTraderQuestion extends CustomTraderQuestionExtension {
 
             if (locationIsValid(responder)) {
                 try {
-                    Creature trader = CurrencyTraderTemplate.createNewTrader(tile, floorLevel, CustomTraderMod.namePrefix + "_" + name, sex, responder.getKingdomId(), template.itemTemplate.getTemplateId(), tag);
+                    Creature trader = CurrencyTraderTemplate.createNewTrader(tile, floorLevel, getPrefix() + name, sex, responder.getKingdomId(), template.itemTemplate.getTemplateId(), tag);
                     logger.info(responder.getName() + " created a currency trader: " + trader.getWurmId());
                 } catch (Exception e) {
                     responder.getCommunicator().sendAlertServerMessage("An error occurred in the rifts of the void. The trader was not created.");
@@ -113,7 +112,7 @@ public class PlaceCurrencyTraderQuestion extends CustomTraderQuestionExtension {
                              .text("This trader will only accept a certain type of item in exchange for goods.")
                              .text("Use a 'tag' to use the same inventory contents for multiple custom/currency traders.")
                              .newLine()
-                             .harray(b -> b.label("Name:").entry("name", 20))
+                             .harray(b -> b.label("Name: " + getPrefix()).entry("name", CustomTraderMod.maxNameLength))
                              .text("Leave blank for a random name.").italic()
                              .newLine()
                              .text("Currency:")

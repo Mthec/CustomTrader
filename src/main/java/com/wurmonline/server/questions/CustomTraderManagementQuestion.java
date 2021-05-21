@@ -5,12 +5,16 @@ import com.wurmonline.server.Items;
 import com.wurmonline.server.Server;
 import com.wurmonline.server.creatures.Creature;
 import com.wurmonline.server.items.Item;
+import com.wurmonline.shared.util.StringUtilities;
 import mod.wurmunlimited.bml.BMLBuilder;
 import mod.wurmunlimited.npcs.customtrader.CustomTraderMod;
 import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Properties;
+
+import static com.wurmonline.server.creatures.CreaturePackageCaller.saveCreatureName;
 
 public class CustomTraderManagementQuestion extends CustomTraderQuestionExtension {
     private final Creature trader;
@@ -29,8 +33,27 @@ public class CustomTraderManagementQuestion extends CustomTraderQuestionExtensio
     @Override
     public void answer(Properties properties) {
         setAnswer(properties);
+        Creature responder = getResponder();
 
         if (wasSelected("confirm")) {
+            String name = getStringProp("name");
+            if (name != null && !name.isEmpty()) {
+                String fullName = getPrefix() + StringUtilities.raiseFirstLetter(name);
+                if (QuestionParser.containsIllegalCharacters(name)) {
+                    responder.getCommunicator().sendNormalServerMessage("The trader didn't like that name, so they shall remain " + trader.getName() + ".");
+                } else if (!fullName.equals(trader.getName())) {
+                    try {
+                        saveCreatureName(trader, fullName);
+                        trader.refreshVisible();
+                        responder.getCommunicator().sendNormalServerMessage("The trader will now be known as " + trader.getName() + ".");
+                    } catch (IOException e) {
+                        logger.warning("Failed to set name (" + fullName + ") for creature (" + trader.getWurmId() + ").");
+                        responder.getCommunicator().sendNormalServerMessage("The trader looks confused, what exactly is a database?");
+                        e.printStackTrace();
+                    }
+                }
+            }
+            
             int dropdown = getIntegerOrDefault("tags", 0);
             String tag;
 
@@ -58,27 +81,25 @@ public class CustomTraderManagementQuestion extends CustomTraderQuestionExtensio
                     sb = new StringBuilder(trader.getName()).append(" looks at the ground and does nothing.");
                 }
 
-                getResponder().getCommunicator().sendNormalServerMessage(sb.toString());
+                responder.getCommunicator().sendNormalServerMessage(sb.toString());
             }
 
             if (wasSelected("empty")) {
                 for (Item item : trader.getInventory().getItemsAsArray()) {
                     Items.destroyItem(item.getWurmId());
                 }
-                getResponder().getCommunicator().sendNormalServerMessage(trader.getName() + " got rid of their stock.");
+                responder.getCommunicator().sendNormalServerMessage(trader.getName() + " got rid of their stock.");
             }
 
             if (wasSelected("full")) {
                 CustomTraderDatabase.fullyStock(trader);
-                getResponder().getCommunicator().sendNormalServerMessage(trader.getName() + " is now fully stocked.");
+                responder.getCommunicator().sendNormalServerMessage(trader.getName() + " is now fully stocked.");
             }
         } else if (wasSelected("edit")) {
             new CustomTraderEditTags(getResponder()).sendQuestion();
         } else if (wasSelected("list")) {
             new CustomTraderItemList(getResponder(), trader, PaymentType.coin).sendQuestion();
         } else if (wasSelected("dismiss")) {
-            Creature responder = getResponder();
-
             if (trader != null) {
                 if (!trader.isTrading()) {
                     Server.getInstance().broadCastAction(trader.getName() + " grunts, packs " + trader.getHisHerItsString() + " things and is off.", trader, 5);
@@ -104,6 +125,8 @@ public class CustomTraderManagementQuestion extends CustomTraderQuestionExtensio
         String bml = new BMLBuilder(id)
                      .text("Use a 'tag' to use the same inventory contents for multiple custom/currency traders.")
                      .text("Leave blank to keep the inventory unique to this custom trader.")
+                     .newLine()
+                     .harray(b -> b.label("Name: " + getPrefix()).entry("name", getNameWithoutPrefix(trader.getName()), CustomTraderMod.maxNameLength))
                      .newLine()
                      .harray(b -> b.label("Tag:").entry("tag", currentTag, CustomTraderMod.maxTagLength))
                      .text(" - or - ")

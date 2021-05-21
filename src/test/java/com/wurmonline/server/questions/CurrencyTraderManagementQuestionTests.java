@@ -1,9 +1,12 @@
 package com.wurmonline.server.questions;
 
 import com.wurmonline.server.creatures.Creature;
+import com.wurmonline.server.creatures.FakeCreatureStatus;
 import com.wurmonline.server.items.ItemList;
 import com.wurmonline.server.items.Trade;
 import com.wurmonline.server.players.Player;
+import com.wurmonline.shared.util.StringUtilities;
+import mod.wurmunlimited.npcs.customtrader.CustomTraderMod;
 import mod.wurmunlimited.npcs.customtrader.CustomTraderTest;
 import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
 import mod.wurmunlimited.npcs.customtrader.stock.Enchantment;
@@ -48,6 +51,62 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
     }
 
     // answer
+
+    @Test
+    void testSetName() {
+        assert CustomTraderMod.namePrefix.equals("Trader");
+        String name = StringUtilities.raiseFirstLetter("MyName");
+        String newName = "Trader_" + name;
+        Properties properties = new Properties();
+        properties.setProperty("confirm", "true");
+        properties.setProperty("name", name);
+        new CurrencyTraderManagementQuestion(gm, trader).answer(properties);
+
+        assertEquals(newName, trader.getName());
+        assertEquals(newName, ((FakeCreatureStatus)trader.getStatus()).savedName);
+        assertThat(gm, receivedMessageContaining("will now be known as " + newName));
+    }
+
+    @Test
+    void testSetNameDifferentPrefix() {
+        CustomTraderMod.namePrefix = "MyPrefix";
+        String name = StringUtilities.raiseFirstLetter("MyName");
+        Properties properties = new Properties();
+        properties.setProperty("confirm", "true");
+        properties.setProperty("name", name);
+        new CurrencyTraderManagementQuestion(gm, trader).answer(properties);
+
+        assertEquals("MyPrefix_" + name, trader.getName());
+        assertThat(gm, receivedMessageContaining("will now be known as MyPrefix_" + name));
+    }
+
+    @Test
+    void testSetNameIllegalCharacters() {
+        assert CustomTraderMod.namePrefix.equals("Trader");
+        String name = trader.getName();
+        Properties properties = new Properties();
+        properties.setProperty("confirm", "true");
+        properties.setProperty("name", "%Name");
+        new CurrencyTraderManagementQuestion(gm, trader).answer(properties);
+
+        assertEquals(name, trader.getName());
+        assertThat(gm, receivedMessageContaining("shall remain " + name));
+    }
+
+    @Test
+    void testSetNameNoMessageOnSameName() {
+        assert CustomTraderMod.namePrefix.equals("Trader");
+        String name = "Name";
+        trader.setName("Trader_" + name);
+        Properties properties = new Properties();
+        properties.setProperty("confirm", "true");
+        properties.setProperty("name", name);
+        new CurrencyTraderManagementQuestion(gm, trader).answer(properties);
+
+        assertEquals("Trader_" + name, trader.getName());
+        assertThat(gm, didNotReceiveMessageContaining("will now be known as " + name));
+        assertThat(gm, didNotReceiveMessageContaining("will remain " + name));
+    }
 
     @Test
     void testNothingChangesIfNoSettingsAreAltered() throws CustomTraderDatabase.StockUpdateException {

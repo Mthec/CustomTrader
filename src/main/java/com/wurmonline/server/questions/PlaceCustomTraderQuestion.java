@@ -53,7 +53,7 @@ public class PlaceCustomTraderQuestion extends CustomTraderQuestionExtension {
 
         if (locationIsValid(responder)) {
             try {
-                Creature trader = CustomTraderTemplate.createNewTrader(tile, floorLevel, CustomTraderMod.namePrefix + "_" + name, sex, responder.getKingdomId(), tag);
+                Creature trader = CustomTraderTemplate.createNewTrader(tile, floorLevel, getPrefix() + name, sex, responder.getKingdomId(), tag);
                 logger.info(responder.getName() + " created a custom trader: " + trader.getWurmId());
             } catch (Exception e) {
                 responder.getCommunicator().sendAlertServerMessage("An error occurred in the rifts of the void. The trader was not created.");
@@ -93,7 +93,7 @@ public class PlaceCustomTraderQuestion extends CustomTraderQuestionExtension {
                              .text("Place a trader with a custom inventory that will restock on a schedule.")
                              .text("Use a 'tag' to use the same inventory contents for multiple custom/currency traders.")
                              .newLine()
-                             .harray(b -> b.label("Name:").entry("name", 20))
+                             .harray(b -> b.label("Name: " + getPrefix()).entry("name", CustomTraderMod.maxNameLength))
                              .text("Leave blank for a random name.").italic()
                              .newLine()
                              .harray(b -> b.label("Tag:").entry("tag", CustomTraderMod.maxTagLength))

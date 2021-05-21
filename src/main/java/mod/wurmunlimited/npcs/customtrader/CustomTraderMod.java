@@ -40,6 +40,7 @@ import java.util.logging.Logger;
 public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable, Initable, ServerStartedListener, PlayerMessageListener {
     private static final Logger logger = Logger.getLogger(CustomTraderMod.class.getName());
     public static final int maxTagLength = 25;
+    public static final int maxNameLength = 20;
     public static String namePrefix = "Trader";
     private boolean preventDecay = true;
     private final CommandWaitTimer restockTimer = new CommandWaitTimer(TimeConstants.MINUTE_MILLIS);
@@ -48,6 +49,7 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
     public void configure(Properties properties) {
         String val = properties.getProperty("prevent_decay", "true");
         preventDecay = val != null && val.equals("true");
+        namePrefix =  properties.getProperty("name_prefix", "Trader");
     }
 
     @Override
@@ -269,6 +271,7 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
         return CustomTraderTemplate.isCustomTrader(trader) || CurrencyTraderTemplate.isCurrencyTrader(trader);
     }
 
+    // TODO - List tags command.
     @Override
     public MessagePolicy onPlayerMessage(Communicator communicator, String message, String title) {
         Player player = communicator.getPlayer();

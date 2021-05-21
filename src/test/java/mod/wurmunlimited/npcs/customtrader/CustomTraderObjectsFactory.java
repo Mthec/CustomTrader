@@ -12,6 +12,7 @@ public class CustomTraderObjectsFactory extends WurmObjectsFactory {
         super();
         new CustomTraderTemplate().createCreateTemplateBuilder().build();
         new CurrencyTraderTemplate().createCreateTemplateBuilder().build();
+        CustomTraderMod.namePrefix = "Trader";
     }
 
     public Creature createNewCustomTrader(VolaTile tile, String name, byte sex, byte kingdom, String tag) {
