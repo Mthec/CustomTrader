@@ -5,8 +5,7 @@ import com.wurmonline.server.TimeConstants;
 import com.wurmonline.server.WurmCalendar;
 import com.wurmonline.server.behaviours.CurrencyTraderTradeAction;
 import com.wurmonline.server.behaviours.ManageCustomTraderAction;
-import com.wurmonline.server.behaviours.PlaceCurrencyTraderAction;
-import com.wurmonline.server.behaviours.PlaceCustomTraderAction;
+import com.wurmonline.server.behaviours.PlaceNpcMenu;
 import com.wurmonline.server.creatures.Communicator;
 import com.wurmonline.server.creatures.Creature;
 import com.wurmonline.server.creatures.CreatureTemplate;
@@ -130,8 +129,7 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
     public void onServerStarted() {
         ModActions.registerAction(new CurrencyTraderTradeAction());
         ModActions.registerAction(new ManageCustomTraderAction());
-        ModActions.registerAction(new PlaceCustomTraderAction());
-        ModActions.registerAction(new PlaceCurrencyTraderAction());
+        PlaceNpcMenu.registerAction();
 
         try {
             CustomTraderDatabase.loadTags();

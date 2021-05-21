@@ -10,7 +10,6 @@ import com.wurmonline.server.zones.Zones;
 import mod.wurmunlimited.Assert;
 import mod.wurmunlimited.npcs.customtrader.CustomTraderTest;
 import org.gotti.wurmunlimited.modloader.ReflectionUtil;
-import org.gotti.wurmunlimited.modsupport.actions.ActionEntryBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -29,13 +28,15 @@ public class PlaceCustomTraderActionTests extends CustomTraderTest {
     private Player gm;
     private Item wand;
     private short actionId;
+    private String actionString;
 
     @Override
     @BeforeEach
     protected void setUp() throws Throwable {
         super.setUp();
         action = mock(Action.class);
-        actionId = ReflectionUtil.getPrivateField(customAction, PlaceCustomTraderAction.class.getDeclaredField("actionId"));
+        when(action.getActionString()).thenAnswer(i -> actionString);
+        actionId = menu.getActionId();
         gm = factory.createNewPlayer();
         gm.setPower((byte)2);
         wand = factory.createNewItem(ItemList.wandGM);
@@ -45,7 +46,7 @@ public class PlaceCustomTraderActionTests extends CustomTraderTest {
 
     @Test
     void testCorrectBehaviourReceived() {
-        List<ActionEntry> entries = customAction.getBehavioursFor(gm, wand, 0, 0, true, 0);
+        List<ActionEntry> entries = menu.getBehavioursFor(gm, wand, 0, 0, true, 0);
         assertEquals(3, entries.size());
         assertEquals("Place Npc", entries.get(0).getActionString());
         assertEquals("Custom Trader", entries.get(1).getActionString());
@@ -56,7 +57,7 @@ public class PlaceCustomTraderActionTests extends CustomTraderTest {
     void testPlayersDoNotGetOption() {
         Player player = factory.createNewPlayer();
         assert player.getPower() < 2;
-        List<ActionEntry> entries = customAction.getBehavioursFor(player, wand, 0, 0, true, 0);
+        List<ActionEntry> entries = menu.getBehavioursFor(player, wand, 0, 0, true, 0);
         assertNull(entries);
     }
 
@@ -64,7 +65,7 @@ public class PlaceCustomTraderActionTests extends CustomTraderTest {
     void testWandRequired() {
         Item item = factory.createNewItem();
         assert !item.isWand();
-        List<ActionEntry> entries = customAction.getBehavioursFor(gm, item, 0, 0, true, 0);
+        List<ActionEntry> entries = menu.getBehavioursFor(gm, item, 0, 0, true, 0);
         assertNull(entries);
     }
 
@@ -72,9 +73,8 @@ public class PlaceCustomTraderActionTests extends CustomTraderTest {
 
     @Test
     void testQuestionReceivedCustomTrader() throws NoSuchFieldException, IllegalAccessException {
-        when(action.getActionEntry()).thenReturn(new ActionEntry(actionId, "Custom Trader", "placing custom trader"));
-        boolean result = customAction.action(action, gm, wand, 0, 0, true,  0, 0, actionId, 0f);
-        assertTrue(result);
+        actionString = "Custom Trader";
+        assertTrue(menu.action(action, gm, wand, 0, 0, true,  0, 0, actionId, 0f));
         assertEquals(1, factory.getCommunicator(gm).getBml().length);
         new PlaceCustomTraderQuestion(gm, Objects.requireNonNull(Zones.getTileOrNull(0, 0, true)), 0).sendQuestion();
 
@@ -91,8 +91,8 @@ public class PlaceCustomTraderActionTests extends CustomTraderTest {
 
     @Test
     void testQuestionReceivedCurrencyTrader() throws NoSuchFieldException, IllegalAccessException {
-        boolean result = currencyAction.action(action, gm, wand, 0, 0, true,  0, 0, currencyAction.getActionId(), 0f);
-        assertTrue(result);
+        actionString = "Currency Trader";
+        assertTrue(menu.action(action, gm, wand, 0, 0, true,  0, 0, actionId, 0f));
         assertEquals(1, factory.getCommunicator(gm).getBml().length);
         new PlaceCurrencyTraderQuestion(gm, Objects.requireNonNull(Zones.getTileOrNull(0, 0, true)), 0).sendQuestion();
 
@@ -109,26 +109,26 @@ public class PlaceCustomTraderActionTests extends CustomTraderTest {
 
     @Test
     void testPlayersDoNotReceiveBML() {
+        actionString = "Custom Trader";
         Player player = factory.createNewPlayer();
         assert player.getPower() < 2;
-        boolean result = customAction.action(action, player, wand, 0, 0, true, 0, 0, actionId, 0f);
-        assertFalse(result);
+        assertTrue(menu.action(action, player, wand, 0, 0, true, 0, 0, actionId, 0f));
         assertEquals(0, factory.getCommunicator(gm).getBml().length);
     }
 
     @Test
     void testWandRequiredForBML() {
+        actionString = "Custom Trader";
         Item item = factory.createNewItem();
         assert !item.isWand();
-        boolean result = customAction.action(action, gm, item, 0, 0, true, 0, 0, actionId, 0f);
-        assertFalse(result);
+        assertTrue(menu.action(action, gm, item, 0, 0, true, 0, 0, actionId, 0f));
         assertEquals(0, factory.getCommunicator(gm).getBml().length);
     }
 
     @Test
     void testIncorrectTileInformation() {
-        boolean result = customAction.action(action, gm, wand, -250, -250, true, 0, 0, actionId, 0f);
-        assertTrue(result);
+        actionString = "Custom Trader";
+        assertTrue(menu.action(action, gm, wand, -250, -250, true, 0, 0, actionId, 0f));
         assertEquals(1, factory.getCommunicator(gm).getMessages().length);
         assertThat(gm, receivedMessageContaining("not be located"));
     }

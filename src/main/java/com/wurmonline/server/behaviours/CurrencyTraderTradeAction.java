@@ -112,9 +112,9 @@ public class CurrencyTraderTradeAction implements ModAction, ActionPerformer, Be
                 ((CurrencyTraderTradeHandler)target.getTradeHandler()).addItemsToTrade();
                 return true;
             }
-            return true;
         }
-        return false;
+
+        return true;
     }
 
     @Override

@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "mod.wurmunlimited.npcs.customtrader"
-version = "0.2.4"
+version = "0.2.6"
 val shortName = "customtrader"
 val wurmServerFolder = "E:/Steam/steamapps/common/Wurm Unlimited/WurmServerLauncher/"
 
@@ -14,6 +14,7 @@ repositories {
 dependencies {
     testImplementation(project(":WurmTestingHelper"))
     implementation(project(":BMLBuilder"))
+    implementation(project(":PlaceNpc"))
     implementation(fileTree(wurmServerFolder) { include("server.jar") })
     implementation(fileTree(wurmServerFolder) { include("modlauncher.jar", "javassist.jar") })
 //    implementation(fileTree(wurmServerFolder + "lib/") { include("WurmUnlimitedCommon-1.9.2.7.jar", "guava-18.0.jar",

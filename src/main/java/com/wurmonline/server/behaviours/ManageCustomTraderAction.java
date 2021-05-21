@@ -33,13 +33,12 @@ public class ManageCustomTraderAction implements ModAction, BehaviourProvider, A
         if (num == actionId && source.isWand() && performer.getPower() >= 2) {
             if (CustomTraderTemplate.isCustomTrader(target)) {
                 new CustomTraderManagementQuestion(performer, target).sendQuestion();
-                return true;
             } else if (CurrencyTraderTemplate.isCurrencyTrader(target)) {
                 new CurrencyTraderManagementQuestion(performer, target).sendQuestion();
-                return true;
             }
         }
-        return false;
+
+        return true;
     }
 
     @Override
