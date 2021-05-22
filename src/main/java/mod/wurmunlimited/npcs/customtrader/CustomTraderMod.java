@@ -271,7 +271,6 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
         return CustomTraderTemplate.isCustomTrader(trader) || CurrencyTraderTemplate.isCurrencyTrader(trader);
     }
 
-    // TODO - List tags command.
     @Override
     public MessagePolicy onPlayerMessage(Communicator communicator, String message, String title) {
         Player player = communicator.getPlayer();
@@ -298,9 +297,11 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
                             break;
                         case NO_TRADERS_FOUND:
                             player.getCommunicator().sendNormalServerMessage("No traders were found with that tag.");
+                            listTraderTags(player);
                             break;
                         case NO_TAG_RECEIVED:
                             player.getCommunicator().sendSafeServerMessage("You need to provide a tag to restock.");
+                            listTraderTags(player);
                             break;
                         case NO_STOCK_FOR_TAG:
                             player.getCommunicator().sendNormalServerMessage("No stock was found for that tag.");
@@ -313,6 +314,10 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
                 }
 
                 return MessagePolicy.DISCARD;
+            } else if (message.startsWith("/tradertags")) {
+                listTraderTags(player);
+
+                return MessagePolicy.DISCARD;
             }
         }
 
@@ -322,5 +327,17 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
     @Override
     public boolean onPlayerMessage(Communicator communicator, String s) {
         return false;
+    }
+
+    static void listTraderTags(Player player) {
+        List<String> tags = CustomTraderDatabase.getAllTags();
+        if (tags.isEmpty()) {
+            player.getCommunicator().sendNormalServerMessage("There are no tags set for custom/currency traders.");
+        } else {
+            tags.sort(String.CASE_INSENSITIVE_ORDER);
+            player.getCommunicator().sendNormalServerMessage("The following custom/currency trader tags are available - " +
+                                                                     String.join(", ", tags) +
+                                                                     ".");
+        }
     }
 }

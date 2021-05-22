@@ -18,6 +18,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.util.List;
@@ -370,5 +371,50 @@ public class CustomTraderModTests extends CustomTraderTest {
             r.assertCount(5);
             assertEquals(5, anotherTraderTagged.getInventory().getItemCount());
         });
+    }
+
+    @Test
+    void testTraderTagsCommandUsed() throws IOException {
+        Player gm = factory.createNewPlayer();
+        gm.setPower((byte)2);
+
+        String tag1 = "t";
+        String tag2 = "short_tag";
+        String tag3 = "12345678901234567890";
+        factory.createNewCustomTrader(tag1);
+        factory.createNewCustomTrader(tag2);
+        factory.createNewCustomTrader(tag3);
+
+        new CustomTraderMod().onPlayerMessage(gm.getCommunicator(), "/tradertags", "Local");
+
+        assertThat(gm, receivedMessageContaining("available - " + tag3 + ", " + tag2 + ", " + tag1 + "."));
+    }
+
+    @Test
+    void testListTraderTags() throws IOException {
+        Player gm = factory.createNewPlayer();
+        gm.setPower((byte)2);
+
+        String tag1 = "t";
+        String tag2 = "short_tag";
+        String tag3 = "12345678901234567890";
+        factory.createNewCustomTrader(tag1);
+        factory.createNewCustomTrader(tag2);
+        factory.createNewCustomTrader(tag3);
+
+        CustomTraderMod.listTraderTags(gm);
+
+        assertThat(gm, receivedMessageContaining("available - " + tag3 + ", " + tag2 + ", " + tag1 + "."));
+    }
+
+    @Test
+    void testListTraderTagsNoneSet() throws IOException {
+        assert CustomTraderDatabase.getAllTags().isEmpty();
+        Player gm = factory.createNewPlayer();
+        gm.setPower((byte)2);
+
+        CustomTraderMod.listTraderTags(gm);
+
+        assertThat(gm, receivedMessageContaining("no tags"));
     }
 }
