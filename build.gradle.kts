@@ -40,6 +40,7 @@ tasks {
         }
 
         from(configurations.runtimeClasspath.get().filter { it.name.startsWith("BMLBuilder") && it.name.endsWith("jar") }.map { zipTree(it) })
+        from(configurations.runtimeClasspath.get().filter { it.name.startsWith("PlaceNpc") && it.name.endsWith("jar") }.map { zipTree(it) })
 
         includeEmptyDirs = false
         archiveFileName.set("$shortName.jar")
