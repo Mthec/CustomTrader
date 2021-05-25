@@ -25,7 +25,7 @@ public abstract class CustomTraderTest {
         if (!init) {
             new PlaceCustomTraderAction();
             new PlaceCurrencyTraderAction();
-            menu = PlaceNpcMenu.registerAction();
+            menu = PlaceNpcMenu.register();
             init = true;
         }
     }

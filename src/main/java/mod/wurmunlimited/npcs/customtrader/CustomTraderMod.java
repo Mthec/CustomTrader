@@ -129,9 +129,9 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
     public void onServerStarted() {
         ModActions.registerAction(new CurrencyTraderTradeAction());
         ModActions.registerAction(new ManageCustomTraderAction());
-        PlaceNpcMenu.registerAction();
         new PlaceCustomTraderAction();
         new PlaceCurrencyTraderAction();
+        PlaceNpcMenu.register();
 
         try {
             CustomTraderDatabase.loadTags();

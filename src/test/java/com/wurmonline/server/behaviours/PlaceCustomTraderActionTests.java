@@ -36,10 +36,18 @@ public class PlaceCustomTraderActionTests extends CustomTraderTest {
         super.setUp();
         action = mock(Action.class);
         when(action.getActionString()).thenAnswer(i -> actionString);
-        actionId = menu.getActionId();
+        actionId = getActionId(1);
         gm = factory.createNewPlayer();
         gm.setPower((byte)2);
         wand = factory.createNewItem(ItemList.wandGM);
+    }
+
+    private short getActionId(int idx) {
+        try {
+            return ReflectionUtil.<List<ActionEntry>>getPrivateField(null, PlaceNpcMenu.class.getDeclaredField("actionEntries")).get(idx).getNumber();
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     // GetBehavioursFor
@@ -92,7 +100,7 @@ public class PlaceCustomTraderActionTests extends CustomTraderTest {
     @Test
     void testQuestionReceivedCurrencyTrader() throws NoSuchFieldException, IllegalAccessException {
         actionString = "Currency Trader";
-        assertTrue(menu.action(action, gm, wand, 0, 0, true,  0, 0, actionId, 0f));
+        assertTrue(menu.action(action, gm, wand, 0, 0, true,  0, 0, getActionId(2), 0f));
         assertEquals(1, factory.getCommunicator(gm).getBml().length);
         new PlaceCurrencyTraderQuestion(gm, Objects.requireNonNull(Zones.getTileOrNull(0, 0, true)), 0).sendQuestion();
 

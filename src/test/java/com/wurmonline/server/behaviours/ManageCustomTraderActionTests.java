@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static mod.wurmunlimited.Assert.bmlEqual;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 
@@ -25,7 +25,7 @@ public class ManageCustomTraderActionTests extends CustomTraderTest {
     private Creature currencyTrader;
     private Item wand;
     private ManageCustomTraderAction action;
-    private Action act = mock(Action.class);
+    private final Action act = mock(Action.class);
 
     @BeforeEach
     protected void setUp() throws Throwable {
@@ -74,8 +74,7 @@ public class ManageCustomTraderActionTests extends CustomTraderTest {
 
     @Test
     void testActionCustomTrader() {
-        boolean result = action.action(act, gm, wand, customTrader, action.getActionId(), 0f);
-        assertTrue(result);
+        assertTrue(action.action(act, gm, wand, customTrader, action.getActionId(), 0f));
         assertEquals(1, factory.getCommunicator(gm).getBml().length);
         new CustomTraderManagementQuestion(gm, customTrader).sendQuestion();
         assertThat(gm, bmlEqual());
@@ -83,8 +82,7 @@ public class ManageCustomTraderActionTests extends CustomTraderTest {
 
     @Test
     void testActionCurrencyTrader() {
-        boolean result = action.action(act, gm, wand, currencyTrader, action.getActionId(), 0f);
-        assertTrue(result);
+        assertTrue(action.action(act, gm, wand, currencyTrader, action.getActionId(), 0f));
         assertEquals(1, factory.getCommunicator(gm).getBml().length);
         new CurrencyTraderManagementQuestion(gm, currencyTrader).sendQuestion();
         assertThat(gm, bmlEqual());
@@ -92,8 +90,7 @@ public class ManageCustomTraderActionTests extends CustomTraderTest {
 
     @Test
     void testActionNotGM() {
-        boolean result = action.action(act, nonGm, wand, customTrader, action.getActionId(), 0f);
-        assertFalse(result);
+        assertTrue(action.action(act, nonGm, wand, customTrader, action.getActionId(), 0f));
         assertEquals(0, factory.getCommunicator(gm).getBml().length);
     }
 
@@ -101,22 +98,19 @@ public class ManageCustomTraderActionTests extends CustomTraderTest {
     void testActionNotWand() {
         Item notWand = factory.createNewItem();
         assert notWand.getTemplateId() != ItemList.wandGM;
-        boolean result = action.action(act, gm, notWand, customTrader, action.getActionId(), 0f);
-        assertFalse(result);
+        assertTrue(action.action(act, gm, notWand, customTrader, action.getActionId(), 0f));
         assertEquals(0, factory.getCommunicator(gm).getBml().length);
     }
 
     @Test
     void testActionNotCustomTrader() {
-        boolean result = action.action(act, gm, wand, factory.createNewTrader(), action.getActionId(), 0f);
-        assertFalse(result);
+        assertTrue(action.action(act, gm, wand, factory.createNewTrader(), action.getActionId(), 0f));
         assertEquals(0, factory.getCommunicator(gm).getBml().length);
     }
 
     @Test
     void testActionIncorrectActionId() {
-        boolean result = action.action(act, gm, wand, customTrader, (short)(action.getActionId() + 1), 0f);
-        assertFalse(result);
+        assertTrue(action.action(act, gm, wand, customTrader, (short)(action.getActionId() + 1), 0f));
         assertEquals(0, factory.getCommunicator(gm).getBml().length);
     }
 }

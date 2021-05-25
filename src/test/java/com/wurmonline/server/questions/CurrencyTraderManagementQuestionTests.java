@@ -70,6 +70,7 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
     @Test
     void testSetNameDifferentPrefix() {
         CustomTraderMod.namePrefix = "MyPrefix";
+        assert !trader.getName().startsWith(CustomTraderMod.namePrefix);
         String name = StringUtilities.raiseFirstLetter("MyName");
         Properties properties = new Properties();
         properties.setProperty("confirm", "true");
