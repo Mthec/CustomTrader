@@ -20,7 +20,7 @@ public class PlaceCurrencyTraderQuestion extends CustomTraderQuestionExtension {
     private Template template;
 
     public PlaceCurrencyTraderQuestion(Creature performer, VolaTile tile, int floorLevel) {
-        super(performer, "Set Up Trader", "", MANAGETRADER, -10);
+        super(performer, "Set Up Currency Trader", "", MANAGETRADER, -10);
         this.tile = tile;
         this.floorLevel = floorLevel;
         EligibleTemplates.init();

@@ -7,9 +7,13 @@ import com.wurmonline.server.economy.Economy;
 import com.wurmonline.server.economy.Shop;
 import com.wurmonline.server.items.CurrencyTraderTrade;
 import com.wurmonline.server.items.Item;
+import com.wurmonline.server.items.StateTraderTrade;
 import com.wurmonline.server.items.Trade;
 import com.wurmonline.server.villages.Village;
 import mod.wurmunlimited.npcs.customtrader.CurrencyTraderTemplate;
+import mod.wurmunlimited.npcs.customtrader.StatTraderTemplate;
+import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
+import mod.wurmunlimited.npcs.customtrader.stats.Stat;
 import org.gotti.wurmunlimited.modsupport.actions.*;
 
 import java.io.IOException;
@@ -17,12 +21,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
 
-public class CurrencyTraderTradeAction implements ModAction, ActionPerformer, BehaviourProvider {
-    private static final Logger logger = Logger.getLogger(CurrencyTraderTradeAction.class.getName());
+public class OtherTraderTradeAction implements ModAction, ActionPerformer, BehaviourProvider {
+    private static final Logger logger = Logger.getLogger(OtherTraderTradeAction.class.getName());
     private final short actionId;
     private final ActionEntry actionEntry;
 
-    public CurrencyTraderTradeAction() {
+    public OtherTraderTradeAction() {
         actionId = (short)ModActions.getNextActionId();
 
         actionEntry = new ActionEntryBuilder(actionId, "Trade", "trading", ItemBehaviour.emptyIntArr).build();
@@ -44,7 +48,9 @@ public class CurrencyTraderTradeAction implements ModAction, ActionPerformer, Be
 
     @Override
     public boolean action(Action action, Creature performer, Creature target, short num, float counter) {
-        if (num == actionId && CurrencyTraderTemplate.isCurrencyTrader(target)) {
+        boolean isCurrencyTrader = CurrencyTraderTemplate.isCurrencyTrader(target);
+        boolean isStatTrader = StatTraderTemplate.is(target);
+        if (num == actionId && (isCurrencyTrader || isStatTrader)) {
             if (performer.getVehicle() != -10L && !performer.isVehicleCommander()) {
                 return true;
             }
@@ -56,14 +62,14 @@ public class CurrencyTraderTradeAction implements ModAction, ActionPerformer, Be
             } else if (target.isTrading() && !target.shouldStopTrading(true)) {
                 Trade trade = target.getTrade();
                 if (trade != null) {
-                    Creature oppos = trade.creatureOne;
-                    if (target.equals(oppos)) {
-                        oppos = trade.creatureTwo;
+                    Creature other = trade.creatureOne;
+                    if (target.equals(other)) {
+                        other = trade.creatureTwo;
                     }
 
                     String name = "someone";
-                    if (oppos != null) {
-                        name = oppos.getName();
+                    if (other != null) {
+                        name = other.getName();
                     }
 
                     performer.getCommunicator().sendNormalServerMessage(target.getName() + " is already trading with " + name + ".");
@@ -103,13 +109,25 @@ public class CurrencyTraderTradeAction implements ModAction, ActionPerformer, Be
                 } catch (IOException ignored) {
                 }
 
-                Trade trade = new CurrencyTraderTrade(performer, target);
+                Trade trade;
+                if (isCurrencyTrader) {
+                    trade = new CurrencyTraderTrade(performer, target);
+                } else {
+                    Stat stat = CustomTraderDatabase.getStatFor(target);
+                    if (stat == null) {
+                        performer.getCommunicator().sendNormalServerMessage(target.getName() + " mind wanders and they forget what they were doing.");
+                        return true;
+                    }
+                    trade = new StateTraderTrade(performer, target, stat);
+                }
                 performer.setTrade(trade);
                 target.setTrade(trade);
                 target.getCommunicator().sendStartTrading(performer);
                 performer.getCommunicator().sendStartTrading(target);
-                //noinspection ConstantConditions
-                ((CurrencyTraderTradeHandler)target.getTradeHandler()).addItemsToTrade();
+                if (isCurrencyTrader) {
+                    //noinspection ConstantConditions
+                    ((CurrencyTraderTradeHandler)target.getTradeHandler()).addItemsToTrade();
+                }
                 return true;
             }
         }

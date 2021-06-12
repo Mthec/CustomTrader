@@ -4,9 +4,10 @@ import com.google.common.base.Joiner;
 import com.wurmonline.server.items.Item;
 import com.wurmonline.server.items.ItemTemplate;
 import com.wurmonline.server.items.ItemTemplateFactory;
-import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -16,8 +17,8 @@ class EligibleTemplates {
     private static int[] defaultOrder;
     private static boolean loaded = false;
 
-    private int[] order;
-    private String eligibleTemplatesNames;
+    private final int[] order;
+    private final String eligibleTemplatesNames;
 
 
     EligibleTemplates(String filter) {

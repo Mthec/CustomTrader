@@ -4,6 +4,7 @@ import com.wurmonline.server.Constants;
 import com.wurmonline.server.behaviours.PlaceCurrencyTraderAction;
 import com.wurmonline.server.behaviours.PlaceCustomTraderAction;
 import com.wurmonline.server.behaviours.PlaceNpcMenu;
+import com.wurmonline.server.behaviours.PlaceStatTraderAction;
 import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
 import org.gotti.wurmunlimited.modloader.ReflectionUtil;
 import org.junit.jupiter.api.AfterEach;
@@ -25,6 +26,7 @@ public abstract class CustomTraderTest {
         if (!init) {
             new PlaceCustomTraderAction();
             new PlaceCurrencyTraderAction();
+            new PlaceStatTraderAction();
             menu = PlaceNpcMenu.register();
             init = true;
         }

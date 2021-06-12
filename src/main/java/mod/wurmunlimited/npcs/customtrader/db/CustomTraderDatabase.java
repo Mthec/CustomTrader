@@ -13,7 +13,9 @@ import com.wurmonline.server.items.ItemSpellEffects;
 import com.wurmonline.server.items.NoSuchTemplateException;
 import com.wurmonline.server.spells.SpellEffect;
 import com.wurmonline.shared.exceptions.WurmServerException;
-import mod.wurmunlimited.npcs.customtrader.CustomTraderTemplate;
+import mod.wurmunlimited.npcs.customtrader.CurrencyTraderTemplate;
+import mod.wurmunlimited.npcs.customtrader.StatTraderTemplate;
+import mod.wurmunlimited.npcs.customtrader.stats.Stat;
 import mod.wurmunlimited.npcs.customtrader.stock.Enchantment;
 import mod.wurmunlimited.npcs.customtrader.stock.StockInfo;
 import mod.wurmunlimited.npcs.customtrader.stock.StockItem;
@@ -68,6 +70,13 @@ public class CustomTraderDatabase {
         ps = conn.prepareStatement("CREATE TABLE IF NOT EXISTS currency_traders (" +
                                            "id INTEGER UNIQUE," +
                                            "currency INTEGER," +
+                                           "tag TEXT" +
+                                           ");");
+        ps.execute();
+        ps = conn.prepareStatement("CREATE TABLE IF NOT EXISTS stat_traders (" +
+                                           "id INTEGER UNIQUE," +
+                                           "stat TEXT," +
+                                           "ratio REAL," +
                                            "tag TEXT" +
                                            ");");
         ps.execute();
@@ -192,6 +201,19 @@ public class CustomTraderDatabase {
         });
     }
 
+    // Stat Trader
+    public static void addNew(Creature trader, Stat stat, String tag) throws SQLException {
+        execute(db -> {
+            PreparedStatement ps = db.prepareStatement("INSERT OR IGNORE INTO stat_traders (id, stat, ratio, tag) VALUES (?, ?, ?, ?)");
+            ps.setLong(1, trader.getWurmId());
+            ps.setString(2, stat.name);
+            ps.setFloat(3, stat.ratio);
+            ps.setString(4, tag);
+
+            ps.execute();
+        });
+    }
+
     private static void updateLastRestocked(Creature trader, StockItem stockItem) {
         try {
             execute(db -> {
@@ -234,6 +256,16 @@ public class CustomTraderDatabase {
         }
     }
 
+    private static String getTraderTable(Creature trader) {
+        if (CurrencyTraderTemplate.isCurrencyTrader(trader)) {
+            return "currency_traders";
+        } else if (StatTraderTemplate.is(trader)) {
+            return "stat_traders";
+        } else {
+            return "traders";
+        }
+    }
+
     public static int getCurrencyFor(Creature trader) {
         AtomicInteger currency = new AtomicInteger(-1);
 
@@ -267,7 +299,53 @@ public class CustomTraderDatabase {
                 ps.execute();
             });
         } catch (SQLException e) {
-            logger.warning("Error when settings \"currency\" (" + currency + ") for trader (" + trader.getWurmId() + ")");
+            logger.warning("Error when setting \"currency\" (" + currency + ") for trader (" + trader.getWurmId() + ")");
+            e.printStackTrace();
+        }
+    }
+
+    public static @Nullable Stat getStatFor(Creature trader) {
+        AtomicReference<String> stat = new AtomicReference<>(null);
+        AtomicReference<Float> ratio = new AtomicReference<>(null);
+
+        try {
+            execute(db -> {
+                PreparedStatement ps = db.prepareStatement("SELECT stat, ratio FROM stat_traders WHERE id=?");
+                ps.setLong(1, trader.getWurmId());
+                ResultSet rs = ps.executeQuery();
+
+                if (rs.isBeforeFirst()) {
+                    stat.set(rs.getString(1));
+                    ratio.set(rs.getFloat(2));
+                }
+            });
+        } catch (SQLException e) {
+            logger.warning("Error when fetching \"stat\" for trader (" + trader.getWurmId() + "), not selecting a stat.");
+            e.printStackTrace();
+            return null;
+        }
+
+        String s = stat.get();
+        Float r = ratio.get();
+        if (s == null || r == null) {
+            logger.warning("Stat name (" + s + ") and/or ratio (" + r + ") were null.");
+            return null;
+        }
+
+        return Stat.create(s, r);
+    }
+
+    public static void setStatFor(Creature trader, Stat stat) {
+        try {
+            execute(db -> {
+                PreparedStatement ps = db.prepareStatement("UPDATE stat_traders SET stat=? WHERE id=?");
+                ps.setString(1, stat.name);
+                ps.setLong(2, trader.getWurmId());
+
+                ps.execute();
+            });
+        } catch (SQLException e) {
+            logger.warning("Error when setting \"stat\" (" + stat.name + ") for trader (" + trader.getWurmId() + ")");
             e.printStackTrace();
         }
     }
@@ -277,9 +355,8 @@ public class CustomTraderDatabase {
             execute(db -> {
                 removeItemsFromInventory(trader, getStockFor(trader));
 
-                PreparedStatement ps = db.prepareStatement("UPDATE " +
-                                                               (CustomTraderTemplate.isCustomTrader(trader) ? "traders" : "currency_traders")
-                                                                + " SET tag=? WHERE id=?");
+                //noinspection SqlResolve
+                PreparedStatement ps = db.prepareStatement("UPDATE " + getTraderTable(trader) + " SET tag=? WHERE id=?");
                 ps.setString(1, tag);
                 ps.setLong(2, trader.getWurmId());
 
@@ -288,7 +365,7 @@ public class CustomTraderDatabase {
                 tags.put(trader, tag);
             });
         } catch (SQLException e) {
-            logger.warning("Failed to update tag for trader.");
+            logger.warning("Failed to update tag for " + trader.getName() + ".");
             e.printStackTrace();
             throw new FailedToUpdateTagException();
         }
@@ -302,18 +379,20 @@ public class CustomTraderDatabase {
                 PreparedStatement ps = db.prepareStatement("UPDATE traders SET tag=? WHERE tag=?");
                 ps.setString(1, "");
                 ps.setString(2, tag);
-
                 ps.execute();
 
                 ps = db.prepareStatement("UPDATE currency_traders SET tag=? WHERE tag=?");
                 ps.setString(1, "");
                 ps.setString(2, tag);
+                ps.execute();
 
+                ps = db.prepareStatement("UPDATE stat_traders SET tag=? WHERE tag=?");
+                ps.setString(1, "");
+                ps.setString(2, tag);
                 ps.execute();
 
                 ps = db.prepareStatement("DELETE FROM tag_stock WHERE tag=?");
                 ps.setString(1, tag);
-
                 ps.execute();
 
                 tags.entrySet().removeIf(e -> e.getValue().equals(tag));
@@ -331,25 +410,27 @@ public class CustomTraderDatabase {
                 PreparedStatement ps = db.prepareStatement("UPDATE traders SET tag=? WHERE tag=?");
                 ps.setString(1, to);
                 ps.setString(2, from);
-
                 ps.execute();
 
                 ps = db.prepareStatement("UPDATE currency_traders SET tag=? WHERE tag=?");
                 ps.setString(1, to);
                 ps.setString(2, from);
+                ps.execute();
 
+                ps = db.prepareStatement("UPDATE stat_traders SET tag=? WHERE tag=?");
+                ps.setString(1, to);
+                ps.setString(2, from);
                 ps.execute();
 
                 ps = db.prepareStatement("UPDATE tag_stock SET tag=? WHERE tag=?");
                 ps.setString(1, to);
                 ps.setString(2, from);
-
                 ps.execute();
 
                 tags.entrySet().removeIf(e -> e.getValue().equals(from));
             });
         } catch (SQLException e) {
-            logger.warning("Failed to update tag for trader.");
+            logger.warning("Failed to update tag (" + from + " -> " + to + ") for trader.");
             e.printStackTrace();
             throw new FailedToUpdateTagException();
         }
@@ -365,8 +446,9 @@ public class CustomTraderDatabase {
 
         try {
             execute(db -> {
+                //noinspection SqlResolve
                 PreparedStatement ps = db.prepareStatement("SELECT tag FROM " +
-                                                               (CustomTraderTemplate.isCustomTrader(trader) ? "traders" : "currency_traders")
+                                                               getTraderTable(trader)
                                                                + " WHERE id=?");
                 ps.setLong(1, trader.getWurmId());
                 ResultSet rs = ps.executeQuery();
@@ -401,6 +483,8 @@ public class CustomTraderDatabase {
                 PreparedStatement ps = db.prepareStatement("SELECT tag FROM traders " +
                                                                "UNION " +
                                                                "SELECT tag FROM currency_traders " +
+                                                               "UNION " +
+                                                               "SELECT tag FROM stat_traders " +
                                                                "ORDER BY 1 COLLATE NOCASE");
                 ResultSet rs = ps.executeQuery();
 
@@ -423,8 +507,15 @@ public class CustomTraderDatabase {
 
         try {
             execute(db -> {
-                PreparedStatement ps = db.prepareStatement("SELECT id FROM traders WHERE tag=?");
+                PreparedStatement ps = db.prepareStatement("SELECT id FROM traders WHERE tag=? " +
+                                                               "UNION " +
+                                                               "SELECT id FROM currency_traders WHERE tag=? " +
+                                                               "UNION " +
+                                                               "SELECT id FROM stat_traders WHERE tag=? " +
+                                                               "ORDER BY 1 COLLATE NOCASE");
                 ps.setString(1, tag);
+                ps.setString(2, tag);
+                ps.setString(3, tag);
                 ResultSet rs = ps.executeQuery();
 
                 while (rs.next()) {
