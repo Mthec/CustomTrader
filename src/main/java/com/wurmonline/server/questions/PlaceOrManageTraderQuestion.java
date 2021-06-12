@@ -41,23 +41,32 @@ public abstract class PlaceOrManageTraderQuestion extends CustomTraderQuestionEx
     }
 
     protected String getName(byte sex) {
+        return getName(sex, null);
+    }
+
+    protected String getName(byte sex, @Nullable Creature trader) {
         Creature responder = getResponder();
         String name = StringUtilities.raiseFirstLetter(getStringProp("name"));
         if (name.isEmpty() || name.length() > 20 || QuestionParser.containsIllegalCharacters(name)) {
-            if (sex == 0) {
-                name = QuestionParser.generateGuardMaleName();
-                responder.getCommunicator().sendSafeServerMessage("The trader didn't like the name, so he chose a new one.");
+            if (trader == null) {
+                if (sex == 0) {
+                    name = QuestionParser.generateGuardMaleName();
+                    responder.getCommunicator().sendSafeServerMessage("The trader didn't like the name, so he chose a new one.");
+                } else {
+                    name = QuestionParser.generateGuardFemaleName();
+                    responder.getCommunicator().sendSafeServerMessage("The trader didn't like the name, so she chose a new one.");
+                }
             } else {
-                name = QuestionParser.generateGuardFemaleName();
-                responder.getCommunicator().sendSafeServerMessage("The trader didn't like the name, so she chose a new one.");
+                responder.getCommunicator().sendNormalServerMessage("The trader didn't like that name, so they shall remain " + trader.getName() + ".");
+                return trader.getName();
             }
         }
 
-        return name;
+        return getPrefix() + name;
     }
 
     protected void checkSaveName(Creature trader) {
-        String fullName = getPrefix() + StringUtilities.raiseFirstLetter(getName(trader.getSex()));
+        String fullName = getName(trader.getSex(), trader);
         if (!fullName.equals(trader.getName())) {
             try {
                 saveCreatureName(trader, fullName);

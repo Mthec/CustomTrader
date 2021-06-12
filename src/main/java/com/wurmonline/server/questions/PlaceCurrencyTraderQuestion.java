@@ -47,7 +47,7 @@ public class PlaceCurrencyTraderQuestion extends PlaceOrManageTraderQuestion {
 
             if (locationIsValid(responder, tile)) {
                 try {
-                    Creature trader = CurrencyTraderTemplate.createNewTrader(tile, floorLevel, getPrefix() + name, sex, responder.getKingdomId(), template.itemTemplate.getTemplateId(), tag);
+                    Creature trader = CurrencyTraderTemplate.createNewTrader(tile, floorLevel, name, sex, responder.getKingdomId(), template.itemTemplate.getTemplateId(), tag);
                     logger.info(responder.getName() + " created a currency trader: " + trader.getWurmId());
                 } catch (Exception e) {
                     responder.getCommunicator().sendAlertServerMessage("An error occurred in the rifts of the void. The trader was not created.");

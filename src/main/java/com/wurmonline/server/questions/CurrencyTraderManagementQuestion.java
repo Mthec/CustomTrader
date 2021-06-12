@@ -72,6 +72,6 @@ public class CurrencyTraderManagementQuestion extends PlaceOrManageTraderQuestio
                                                   .button("do_filter", "Apply"))
                              .newLine();
 
-        getResponder().getCommunicator().sendBml(450, 400, true, true, endBML(bml), 200, 200, 200, title);
+        getResponder().getCommunicator().sendBml(450, 400, true, true, endBML(bml, currentTag, trader), 200, 200, 200, title);
     }
 }

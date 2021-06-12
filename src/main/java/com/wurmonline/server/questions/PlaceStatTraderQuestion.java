@@ -63,7 +63,7 @@ public class PlaceStatTraderQuestion extends PlaceOrManageTraderQuestion {
 
         if (locationIsValid(responder, tile)) {
             try {
-                Creature trader = StatTraderTemplate.createNewTrader(tile, floorLevel, getPrefix() + name, sex, responder.getKingdomId(), stat, tag);
+                Creature trader = StatTraderTemplate.createNewTrader(tile, floorLevel, name, sex, responder.getKingdomId(), stat, tag);
                 logger.info(responder.getName() + " created a stat trader: " + trader.getWurmId());
             } catch (Exception e) {
                 responder.getCommunicator().sendAlertServerMessage("An error occurred in the rifts of the void. The trader was not created.");

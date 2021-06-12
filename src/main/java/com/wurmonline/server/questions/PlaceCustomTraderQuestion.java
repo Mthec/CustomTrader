@@ -31,7 +31,7 @@ public class PlaceCustomTraderQuestion extends PlaceOrManageTraderQuestion {
 
         if (locationIsValid(responder, tile)) {
             try {
-                Creature trader = CustomTraderTemplate.createNewTrader(tile, floorLevel, getPrefix() + name, sex, responder.getKingdomId(), tag);
+                Creature trader = CustomTraderTemplate.createNewTrader(tile, floorLevel, name, sex, responder.getKingdomId(), tag);
                 logger.info(responder.getName() + " created a custom trader: " + trader.getWurmId());
             } catch (Exception e) {
                 responder.getCommunicator().sendAlertServerMessage("An error occurred in the rifts of the void. The trader was not created.");

@@ -55,10 +55,11 @@ public class PlaceCustomTraderActionTests extends CustomTraderTest {
     @Test
     void testCorrectBehaviourReceived() {
         List<ActionEntry> entries = menu.getBehavioursFor(gm, wand, 0, 0, true, 0);
-        assertEquals(3, entries.size());
+        assertEquals(4, entries.size());
         assertEquals("Place Npc", entries.get(0).getActionString());
         assertEquals("Custom Trader", entries.get(1).getActionString());
         assertEquals("Currency Trader", entries.get(2).getActionString());
+        assertEquals("Stat Trader", entries.get(3).getActionString());
     }
 
     @Test

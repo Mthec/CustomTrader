@@ -91,6 +91,6 @@ public class StatTraderManagementQuestion extends PlaceOrManageTraderQuestion {
                      .harray(b -> b.label("Ratio:").entry("ratio", Float.toString(currentStat.ratio), 6))
                      .newLine();
 
-        getResponder().getCommunicator().sendBml(400, 350, true, true, endBML(bml), 200, 200, 200, title);
+        getResponder().getCommunicator().sendBml(400, 350, true, true, endBML(bml, currentTag, trader), 200, 200, 200, title);
     }
 }
