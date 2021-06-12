@@ -13,10 +13,7 @@ import com.wurmonline.server.economy.Shop;
 import com.wurmonline.server.items.Item;
 import com.wurmonline.server.items.Trade;
 import com.wurmonline.server.players.Player;
-import com.wurmonline.server.questions.CreatureCreationQuestion;
-import com.wurmonline.server.questions.PlaceCurrencyTraderQuestion;
-import com.wurmonline.server.questions.PlaceCustomTraderQuestion;
-import com.wurmonline.server.questions.Question;
+import com.wurmonline.server.questions.*;
 import com.wurmonline.server.zones.VolaTile;
 import com.wurmonline.server.zones.Zones;
 import javassist.*;
@@ -40,14 +37,25 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
     public static final int maxTagLength = 25;
     public static final int maxNameLength = 20;
     public static String namePrefix = "Trader";
+    private static boolean requirePriestForFavor = true;
     private boolean preventDecay = true;
     private final CommandWaitTimer restockTimer = new CommandWaitTimer(TimeConstants.MINUTE_MILLIS);
+
+    public static boolean isOtherTrader(Creature maybeTrader) {
+        return CurrencyTraderTemplate.isCurrencyTrader(maybeTrader) || StatTraderTemplate.is(maybeTrader);
+    }
+
+    public static boolean requirePriestForFavor() {
+        return requirePriestForFavor;
+    }
 
     @Override
     public void configure(Properties properties) {
         String val = properties.getProperty("prevent_decay", "true");
         preventDecay = val != null && val.equals("true");
         namePrefix =  properties.getProperty("name_prefix", "Trader");
+        val = properties.getProperty("require_priest_for_favor", "true");
+        requirePriestForFavor = val != null && val.equals("true");
     }
 
     @Override
@@ -151,6 +159,7 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
             CustomTraderDatabase.restock(creature);
         }
 
+        //noinspection SuspiciousInvocationHandlerImplementation
         return toDestroy;
     }
 
@@ -185,6 +194,7 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
             creature.getShop().setMoney(0);
         }
 
+        //noinspection SuspiciousInvocationHandlerImplementation
         return tradeCompleted;
     }
 
@@ -192,7 +202,7 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
         Creature creature = (Creature)args[0];
         boolean destroying = (boolean)args[1];
         Shop tm;
-        if (CurrencyTraderTemplate.isCurrencyTrader(creature)) {
+        if (isOtherTrader(creature)) {
             ReentrantReadWriteLock SHOPS_RW_LOCK = ReflectionUtil.getPrivateField(null, Economy.class.getDeclaredField("SHOPS_RW_LOCK"));
             SHOPS_RW_LOCK.readLock().lock();
 
@@ -226,8 +236,10 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
 
             if (CustomTraderTemplate.isCustomTrader(creature))
                 ServiceHandler = Class.forName("com.wurmonline.server.creatures.CustomTraderTradeHandler");
-            else
+            else if (CurrencyTraderTemplate.isCurrencyTrader(creature))
                 ServiceHandler = Class.forName("com.wurmonline.server.creatures.CurrencyTraderTradeHandler");
+            else
+                ServiceHandler = Class.forName("com.wurmonline.server.creatures.StatTraderTradeHandler");
             handler = (TradeHandler)ServiceHandler.getConstructor(Creature.class, Trade.class).newInstance(creature, creature.getTrade());
             tradeHandler.set(o, handler);
         }
@@ -259,6 +271,9 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
                 } else if (CurrencyTraderTemplate.isCurrencyTrader(template)) {
                     new PlaceCurrencyTraderQuestion(responder, tile, floorLevel).answer(answers);
                     return null;
+                } else if (StatTraderTemplate.is(template)) {
+                    new PlaceStatTraderQuestion(responder, tile, floorLevel).answer(answers);
+                    return null;
                 }
             }
         } catch (NumberFormatException | IndexOutOfBoundsException e) {
@@ -270,7 +285,7 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
     }
 
     private boolean isSpecialTrader(Creature trader) {
-        return CustomTraderTemplate.isCustomTrader(trader) || CurrencyTraderTemplate.isCurrencyTrader(trader);
+        return CustomTraderTemplate.isCustomTrader(trader) || isOtherTrader(trader);
     }
 
     @Override
@@ -334,10 +349,10 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
     static void listTraderTags(Player player) {
         List<String> tags = CustomTraderDatabase.getAllTags();
         if (tags.isEmpty()) {
-            player.getCommunicator().sendNormalServerMessage("There are no tags set for custom/currency traders.");
+            player.getCommunicator().sendNormalServerMessage("There are no tags set for custom traders.");
         } else {
             tags.sort(String.CASE_INSENSITIVE_ORDER);
-            player.getCommunicator().sendNormalServerMessage("The following custom/currency trader tags are available - " +
+            player.getCommunicator().sendNormalServerMessage("The following custom trader tags are available - " +
                                                                      String.join(", ", tags) +
                                                                      ".");
         }

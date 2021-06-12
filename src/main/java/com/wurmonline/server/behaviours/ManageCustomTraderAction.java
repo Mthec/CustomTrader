@@ -4,8 +4,10 @@ import com.wurmonline.server.creatures.Creature;
 import com.wurmonline.server.items.Item;
 import com.wurmonline.server.questions.CurrencyTraderManagementQuestion;
 import com.wurmonline.server.questions.CustomTraderManagementQuestion;
+import com.wurmonline.server.questions.StatTraderManagementQuestion;
 import mod.wurmunlimited.npcs.customtrader.CurrencyTraderTemplate;
 import mod.wurmunlimited.npcs.customtrader.CustomTraderTemplate;
+import mod.wurmunlimited.npcs.customtrader.StatTraderTemplate;
 import org.gotti.wurmunlimited.modsupport.actions.*;
 
 import java.util.Collections;
@@ -35,6 +37,8 @@ public class ManageCustomTraderAction implements ModAction, BehaviourProvider, A
                 new CustomTraderManagementQuestion(performer, target).sendQuestion();
             } else if (CurrencyTraderTemplate.isCurrencyTrader(target)) {
                 new CurrencyTraderManagementQuestion(performer, target).sendQuestion();
+            } else if (StatTraderTemplate.is(target)) {
+                new StatTraderManagementQuestion(performer, target).sendQuestion();
             }
         }
 

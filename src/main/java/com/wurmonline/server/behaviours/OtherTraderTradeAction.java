@@ -7,12 +7,13 @@ import com.wurmonline.server.economy.Economy;
 import com.wurmonline.server.economy.Shop;
 import com.wurmonline.server.items.CurrencyTraderTrade;
 import com.wurmonline.server.items.Item;
-import com.wurmonline.server.items.StateTraderTrade;
+import com.wurmonline.server.items.StatTraderTrade;
 import com.wurmonline.server.items.Trade;
 import com.wurmonline.server.villages.Village;
 import mod.wurmunlimited.npcs.customtrader.CurrencyTraderTemplate;
 import mod.wurmunlimited.npcs.customtrader.StatTraderTemplate;
 import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
+import mod.wurmunlimited.npcs.customtrader.stats.Favor;
 import mod.wurmunlimited.npcs.customtrader.stats.Stat;
 import org.gotti.wurmunlimited.modsupport.actions.*;
 
@@ -117,8 +118,11 @@ public class OtherTraderTradeAction implements ModAction, ActionPerformer, Behav
                     if (stat == null) {
                         performer.getCommunicator().sendNormalServerMessage(target.getName() + " mind wanders and they forget what they were doing.");
                         return true;
+                    } else if (stat.name.equals(Favor.class.getSimpleName())) {
+                        performer.getCommunicator().sendSafeServerMessage(target.getName() + " says 'I will only trade with priests.'.");
+                        return true;
                     }
-                    trade = new StateTraderTrade(performer, target, stat);
+                    trade = new StatTraderTrade(performer, target, stat);
                 }
                 performer.setTrade(trade);
                 target.setTrade(trade);

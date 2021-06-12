@@ -58,7 +58,7 @@ public class StatTraderTradeHandler extends TradeHandler {
             if (!waiting) {
                 TradingWindow sellWindow = trade.getTradingWindow(3);
                 int diff = Arrays.stream(sellWindow.getAllItems()).mapToInt(i -> getTraderSellPriceForItem(i, sellWindow)).sum() -
-                           trade.creatureOne.getKarma();
+                           stat.creatureHas(trade.creatureOne);
                 if (logger.isLoggable(Level.FINEST)) {
                     logger.finest("diff is " + diff);
                 }
