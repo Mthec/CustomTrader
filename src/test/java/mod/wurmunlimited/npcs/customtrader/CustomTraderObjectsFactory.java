@@ -3,6 +3,7 @@ package mod.wurmunlimited.npcs.customtrader;
 import com.wurmonline.server.creatures.Creature;
 import com.wurmonline.server.economy.FakeShop;
 import com.wurmonline.server.items.ItemList;
+import com.wurmonline.server.kingdom.Kingdom;
 import com.wurmonline.server.zones.VolaTile;
 import com.wurmonline.server.zones.Zones;
 import mod.wurmunlimited.WurmObjectsFactory;
@@ -39,7 +40,7 @@ public class CustomTraderObjectsFactory extends WurmObjectsFactory {
     }
 
     public Creature createNewCustomTrader(String tag) {
-        return createNewCustomTrader(Zones.getOrCreateTile(123, 321, true), randomName("Fred"), (byte)0, (byte)0, tag);
+        return createNewCustomTrader(Zones.getOrCreateTile(123, 321, true), randomName("Fred"), (byte)0, Kingdom.KINGDOM_FREEDOM, tag);
     }
 
     public Creature createNewCurrencyTrader(VolaTile tile, String name, byte sex, byte kingdom, int currency, String tag) {
@@ -61,11 +62,11 @@ public class CustomTraderObjectsFactory extends WurmObjectsFactory {
     }
 
     public Creature createNewCurrencyTrader(int currency, int multiplier) {
-        return createNewCurrencyTrader(Zones.getOrCreateTile(123, 321, true), randomName("Bob"), (byte)0, (byte)0, currency, "");
+        return createNewCurrencyTrader(Zones.getOrCreateTile(123, 321, true), randomName("Bob"), (byte)0, Kingdom.KINGDOM_FREEDOM, currency, "");
     }
 
     public Creature createNewCurrencyTrader(String tag) {
-        return createNewCurrencyTrader(Zones.getOrCreateTile(123, 321, true), randomName("Bob"), (byte)0, (byte)0, ItemList.medallionHota, tag);
+        return createNewCurrencyTrader(Zones.getOrCreateTile(123, 321, true), randomName("Bob"), (byte)0, Kingdom.KINGDOM_FREEDOM, ItemList.medallionHota, tag);
     }
 
     public Creature createNewStatTrader() {
@@ -73,7 +74,7 @@ public class CustomTraderObjectsFactory extends WurmObjectsFactory {
     }
 
     public Creature createNewStatTrader(Stat stat) {
-        return createNewStatTrader(Zones.getOrCreateTile(123, 321, true), randomName("George"), (byte)0, (byte)0, stat, "");
+        return createNewStatTrader(Zones.getOrCreateTile(123, 321, true), randomName("George"), (byte)0, Kingdom.KINGDOM_FREEDOM, stat, "");
     }
 
     public Creature createNewStatTrader(VolaTile tile, String name, byte sex, byte kingdom, Stat stat, String tag) {

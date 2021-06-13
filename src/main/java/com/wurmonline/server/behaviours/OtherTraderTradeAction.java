@@ -3,6 +3,7 @@ package com.wurmonline.server.behaviours;
 import com.wurmonline.server.Servers;
 import com.wurmonline.server.creatures.Creature;
 import com.wurmonline.server.creatures.CurrencyTraderTradeHandler;
+import com.wurmonline.server.creatures.StatTraderTradeHandler;
 import com.wurmonline.server.economy.Economy;
 import com.wurmonline.server.economy.Shop;
 import com.wurmonline.server.items.CurrencyTraderTrade;
@@ -11,7 +12,7 @@ import com.wurmonline.server.items.StatTraderTrade;
 import com.wurmonline.server.items.Trade;
 import com.wurmonline.server.villages.Village;
 import mod.wurmunlimited.npcs.customtrader.CurrencyTraderTemplate;
-import mod.wurmunlimited.npcs.customtrader.StatTraderTemplate;
+import mod.wurmunlimited.npcs.customtrader.CustomTraderMod;
 import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
 import mod.wurmunlimited.npcs.customtrader.stats.Favor;
 import mod.wurmunlimited.npcs.customtrader.stats.Stat;
@@ -36,7 +37,7 @@ public class OtherTraderTradeAction implements ModAction, ActionPerformer, Behav
 
     @Override
     public List<ActionEntry> getBehavioursFor(Creature performer, Creature target) {
-        if (CurrencyTraderTemplate.isCurrencyTrader(target)) {
+        if (CustomTraderMod.isOtherTrader(target)) {
             return Collections.singletonList(actionEntry);
         }
         return null;
@@ -50,8 +51,7 @@ public class OtherTraderTradeAction implements ModAction, ActionPerformer, Behav
     @Override
     public boolean action(Action action, Creature performer, Creature target, short num, float counter) {
         boolean isCurrencyTrader = CurrencyTraderTemplate.isCurrencyTrader(target);
-        boolean isStatTrader = StatTraderTemplate.is(target);
-        if (num == actionId && (isCurrencyTrader || isStatTrader)) {
+        if (num == actionId && CustomTraderMod.isOtherTrader(target)) {
             if (performer.getVehicle() != -10L && !performer.isVehicleCommander()) {
                 return true;
             }
@@ -131,6 +131,9 @@ public class OtherTraderTradeAction implements ModAction, ActionPerformer, Behav
                 if (isCurrencyTrader) {
                     //noinspection ConstantConditions
                     ((CurrencyTraderTradeHandler)target.getTradeHandler()).addItemsToTrade();
+                } else {
+                    //noinspection ConstantConditions
+                    ((StatTraderTradeHandler)target.getTradeHandler()).addItemsToTrade();
                 }
                 return true;
             }

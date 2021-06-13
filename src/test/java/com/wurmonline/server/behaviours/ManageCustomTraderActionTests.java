@@ -46,8 +46,24 @@ public class ManageCustomTraderActionTests extends CustomTraderTest {
     // getBehaviourFor
 
     @Test
-    void testGetBehaviourFor() {
+    void testGetBehaviourForCustomTrader() {
         List<ActionEntry> entries = action.getBehavioursFor(gm, wand, customTrader);
+        assertNotNull(entries);
+        assertEquals(1, entries.size());
+        assertEquals("Manage", entries.get(0).getActionString());
+    }
+
+    @Test
+    void testGetBehaviourForCurrencyTrader() {
+        List<ActionEntry> entries = action.getBehavioursFor(gm, wand, currencyTrader);
+        assertNotNull(entries);
+        assertEquals(1, entries.size());
+        assertEquals("Manage", entries.get(0).getActionString());
+    }
+
+    @Test
+    void testGetBehaviourForStatTrader() {
+        List<ActionEntry> entries = action.getBehavioursFor(gm, wand, statTrader);
         assertNotNull(entries);
         assertEquals(1, entries.size());
         assertEquals("Manage", entries.get(0).getActionString());

@@ -6,6 +6,7 @@ import com.wurmonline.server.questions.CurrencyTraderManagementQuestion;
 import com.wurmonline.server.questions.CustomTraderManagementQuestion;
 import com.wurmonline.server.questions.StatTraderManagementQuestion;
 import mod.wurmunlimited.npcs.customtrader.CurrencyTraderTemplate;
+import mod.wurmunlimited.npcs.customtrader.CustomTraderMod;
 import mod.wurmunlimited.npcs.customtrader.CustomTraderTemplate;
 import mod.wurmunlimited.npcs.customtrader.StatTraderTemplate;
 import org.gotti.wurmunlimited.modsupport.actions.*;
@@ -25,7 +26,7 @@ public class ManageCustomTraderAction implements ModAction, BehaviourProvider, A
 
     @Override
     public List<ActionEntry> getBehavioursFor(Creature performer, Item subject, Creature target) {
-        if (subject.isWand() && performer.getPower() >= 2 && (CustomTraderTemplate.isCustomTrader(target) || CurrencyTraderTemplate.isCurrencyTrader(target)))
+        if (subject.isWand() && performer.getPower() >= 2 && (CustomTraderTemplate.isCustomTrader(target) || CustomTraderMod.isOtherTrader(target)))
             return Collections.singletonList(actionEntry);
         return null;
     }
