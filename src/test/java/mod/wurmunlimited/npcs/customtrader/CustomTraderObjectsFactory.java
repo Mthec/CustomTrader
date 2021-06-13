@@ -9,6 +9,8 @@ import mod.wurmunlimited.WurmObjectsFactory;
 import mod.wurmunlimited.npcs.customtrader.stats.Karma;
 import mod.wurmunlimited.npcs.customtrader.stats.Stat;
 
+import java.util.Objects;
+
 public class CustomTraderObjectsFactory extends WurmObjectsFactory {
     public CustomTraderObjectsFactory() throws Exception {
         super();
@@ -67,7 +69,7 @@ public class CustomTraderObjectsFactory extends WurmObjectsFactory {
     }
 
     public Creature createNewStatTrader() {
-        return createNewStatTrader(Stat.create(Karma.class.getSimpleName(), 1.0f));
+        return createNewStatTrader(Objects.requireNonNull(Stat.getFactoryByName(Karma.class.getSimpleName())).create(1.0f));
     }
 
     public Creature createNewStatTrader(Stat stat) {

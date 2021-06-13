@@ -28,7 +28,7 @@ public class StatTraderTradeTests extends CustomTraderTest {
     protected void setUp() throws Throwable {
         super.setUp();
         player = factory.createNewPlayer();
-        stat = Karma.create(Karma.class.getSimpleName(), 1.0f);
+        stat = create(Karma.class.getSimpleName(), 1.0f);
         trader = factory.createNewStatTrader(stat);
         assert trader.getShop() != null;
         CustomTraderDatabase.addStockItemTo(trader, 5, 5, 1, (byte)0, (byte)0, 5, new Enchantment[0], (byte)0, 5, 5, 0);

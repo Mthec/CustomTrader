@@ -19,6 +19,7 @@ import com.wurmonline.server.zones.Zones;
 import javassist.*;
 import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
 import mod.wurmunlimited.npcs.customtrader.stats.Favor;
+import mod.wurmunlimited.npcs.customtrader.stats.FavorPriest;
 import mod.wurmunlimited.npcs.customtrader.stats.Health;
 import mod.wurmunlimited.npcs.customtrader.stats.Karma;
 import org.gotti.wurmunlimited.modloader.ReflectionUtil;
@@ -40,7 +41,6 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
     public static final int maxTagLength = 25;
     public static final int maxNameLength = 20;
     public static String namePrefix = "Trader";
-    private static boolean requirePriestForFavor = true;
     private boolean preventDecay = true;
     private final CommandWaitTimer restockTimer = new CommandWaitTimer(TimeConstants.MINUTE_MILLIS);
 
@@ -48,14 +48,11 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
         Karma.register();
         Health.register();
         Favor.register();
+        FavorPriest.register();
     }
 
     public static boolean isOtherTrader(Creature maybeTrader) {
         return CurrencyTraderTemplate.isCurrencyTrader(maybeTrader) || StatTraderTemplate.is(maybeTrader);
-    }
-
-    public static boolean requirePriestForFavor() {
-        return requirePriestForFavor;
     }
 
     @Override
@@ -63,8 +60,6 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
         String val = properties.getProperty("prevent_decay", "true");
         preventDecay = val != null && val.equals("true");
         namePrefix =  properties.getProperty("name_prefix", "Trader");
-        val = properties.getProperty("require_priest_for_favor", "true");
-        requirePriestForFavor = val != null && val.equals("true");
     }
 
     @Override

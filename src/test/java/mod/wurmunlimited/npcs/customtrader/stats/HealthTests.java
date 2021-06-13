@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 public class HealthTests extends StatTests {
     @Override
     protected Stat getStat(float ratio) {
-        return Health.create(Health.class.getSimpleName(), ratio);
+        return create(Health.class.getSimpleName(), ratio);
     }
 
     @Override

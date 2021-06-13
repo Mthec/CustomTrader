@@ -6,18 +6,18 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class FavorTests extends StatTests {
+public class FavorPriestTests extends StatTests {
     @Override
     protected Stat getStat(float ratio) {
-        return create(Favor.class.getSimpleName(), ratio);
+        return create(FavorPriest.class.getSimpleName(), ratio);
     }
 
     @Override
     protected void giveStat(Player player, int amount) {
         try {
+            player.setPriest(true);
             player.setFavor(amount);
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -26,6 +26,9 @@ public class FavorTests extends StatTests {
 
     @Override
     protected int getHas(Player player) {
+        if (!player.isPriest()) {
+            throw new RuntimeException("Player was not a priest.");
+        }
         return (int)player.getFavor();
     }
 
@@ -36,6 +39,7 @@ public class FavorTests extends StatTests {
         Stat stat = getStat(0.0001f);
 
         try {
+            player.setPriest(true);
             player.setFavor(0.0002f);
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -43,5 +47,21 @@ public class FavorTests extends StatTests {
 
         assertTrue(stat.takeStatFrom(player, 1));
         assertEquals(0.0001f, player.getFavor());
+    }
+
+    @Test
+    void testIsNotPriest() {
+        Player player = CustomTraderObjectsFactory.getCurrent().createNewPlayer();
+        assert !player.isPriest();
+        Stat stat = getStat(1.0f);
+
+        try {
+            player.setFavor(10);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        assertFalse(stat.takeStatFrom(player, 1));
+        assertEquals(10, player.getFavor());
     }
 }

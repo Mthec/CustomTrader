@@ -7,6 +7,7 @@ import com.wurmonline.server.players.Player;
 import mod.wurmunlimited.npcs.customtrader.CustomTraderMod;
 import mod.wurmunlimited.npcs.customtrader.CustomTraderTest;
 import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
+import mod.wurmunlimited.npcs.customtrader.stats.FavorPriest;
 import mod.wurmunlimited.npcs.customtrader.stats.Karma;
 import mod.wurmunlimited.npcs.customtrader.stats.Stat;
 import mod.wurmunlimited.npcs.customtrader.stock.Enchantment;
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
@@ -37,7 +39,7 @@ public class StatTraderTradeHandlerTests extends CustomTraderTest {
     protected void setUp() throws Throwable {
         super.setUp();
         player = factory.createNewPlayer();
-        stat = Stat.create(Karma.class.getSimpleName(), 1.0f);
+        stat = create(Karma.class.getSimpleName(), 1.0f);
         assert stat != null;
         trader = factory.createNewStatTrader(stat);
         assert trader.getShop() != null;
@@ -173,5 +175,31 @@ public class StatTraderTradeHandlerTests extends CustomTraderTest {
         assertThat(player, receivedMessageContaining("completed"));
         assertEquals(1, player.getInventory().getItemCount());
         assertEquals(0, trader.getInventory().getItems().size());
+    }
+
+    @Test
+    void testNonPriestsBlockedIfFavorPriest() throws NoSuchFieldException, IllegalAccessException, IOException {
+        assert !player.isPriest();
+        player.setFavor(2);
+        CustomTraderDatabase.setStatFor(trader, create(FavorPriest.class.getSimpleName(), 1.0f));
+
+        handler = new StatTraderTradeHandler(trader, trade);
+        assertThat(player, receivedMessageContaining("only offer my services to priests"));
+        assertFalse(player.isTrading());
+        assertNull(player.getTrade());
+        assertNull(trader.getTrade());
+    }
+
+    @Test
+    void testPriestsNotBlockedIfFavorPriest() throws NoSuchFieldException, IllegalAccessException, IOException {
+        player.setPriest(true);
+        player.setFavor(2);
+        CustomTraderDatabase.setStatFor(trader, create(FavorPriest.class.getSimpleName(), 1.0f));
+
+        handler = new StatTraderTradeHandler(trader, trade);
+        assertThat(player, receivedMessageContaining("I will trade"));
+        assertTrue(player.isTrading());
+        assertNotNull(player.getTrade());
+        assertNotNull(trader.getTrade());
     }
 }

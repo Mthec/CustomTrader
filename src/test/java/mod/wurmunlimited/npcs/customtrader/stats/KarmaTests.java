@@ -5,7 +5,7 @@ import com.wurmonline.server.players.Player;
 public class KarmaTests extends StatTests {
     @Override
     protected Stat getStat(float ratio) {
-        return Karma.create(Karma.class.getSimpleName(), ratio);
+        return create(Karma.class.getSimpleName(), ratio);
     }
 
     @Override

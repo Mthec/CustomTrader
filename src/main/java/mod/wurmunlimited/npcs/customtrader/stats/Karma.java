@@ -6,9 +6,27 @@ import java.util.logging.Logger;
 
 public class Karma extends Stat {
     private static final Logger logger = Logger.getLogger(Karma.class.getName());
+    private static final StatFactory factory = new StatFactory() {
+        private final String name = Karma.class.getSimpleName();
+
+        @Override
+        public String label() {
+            return name;
+        }
+
+        @Override
+        public String name() {
+            return name;
+        }
+
+        @Override
+        public Stat create(float ratio) {
+            return new Karma(ratio);
+        }
+    };
 
     private Karma(float ratio) {
-        super(Karma.class.getSimpleName(), ratio);
+        super(ratio);
     }
 
     @Override
@@ -30,7 +48,12 @@ public class Karma extends Stat {
         return Math.max(0, (int)(creature.getKarma() * ratio));
     }
 
+    @Override
+    public StatFactory getFactory() {
+        return factory;
+    }
+
     public static void register() {
-        Stat.add(Karma.class.getSimpleName(), Karma::new);
+        Stat.add(factory);
     }
 }

@@ -6,6 +6,7 @@ import com.wurmonline.server.behaviours.PlaceCustomTraderAction;
 import com.wurmonline.server.behaviours.PlaceNpcMenu;
 import com.wurmonline.server.behaviours.PlaceStatTraderAction;
 import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
+import mod.wurmunlimited.npcs.customtrader.stats.Stat;
 import org.gotti.wurmunlimited.modloader.ReflectionUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach;
 
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Objects;
 
 public abstract class CustomTraderTest {
     protected CustomTraderObjectsFactory factory;
@@ -68,5 +70,9 @@ public abstract class CustomTraderTest {
         } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    protected Stat create(String name, float ratio) {
+        return Objects.requireNonNull(Stat.getFactoryByName(name)).create(ratio);
     }
 }

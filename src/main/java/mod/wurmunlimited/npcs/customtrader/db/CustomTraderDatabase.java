@@ -16,6 +16,7 @@ import com.wurmonline.shared.exceptions.WurmServerException;
 import mod.wurmunlimited.npcs.customtrader.CurrencyTraderTemplate;
 import mod.wurmunlimited.npcs.customtrader.StatTraderTemplate;
 import mod.wurmunlimited.npcs.customtrader.stats.Stat;
+import mod.wurmunlimited.npcs.customtrader.stats.StatFactory;
 import mod.wurmunlimited.npcs.customtrader.stock.Enchantment;
 import mod.wurmunlimited.npcs.customtrader.stock.StockInfo;
 import mod.wurmunlimited.npcs.customtrader.stock.StockItem;
@@ -306,7 +307,7 @@ public class CustomTraderDatabase {
 
     public static @Nullable Stat getStatFor(Creature trader) {
         AtomicReference<String> stat = new AtomicReference<>(null);
-        AtomicReference<Float> ratio = new AtomicReference<>(null);
+        AtomicReference<Float> ratioValue = new AtomicReference<>(null);
 
         try {
             execute(db -> {
@@ -316,7 +317,7 @@ public class CustomTraderDatabase {
 
                 if (rs.isBeforeFirst()) {
                     stat.set(rs.getString(1));
-                    ratio.set(rs.getFloat(2));
+                    ratioValue.set(rs.getFloat(2));
                 }
             });
         } catch (SQLException e) {
@@ -325,14 +326,19 @@ public class CustomTraderDatabase {
             return null;
         }
 
-        String s = stat.get();
-        Float r = ratio.get();
-        if (s == null || r == null) {
-            logger.warning("Stat name (" + s + ") and/or ratio (" + r + ") were null.");
+        String name = stat.get();
+        Float ratio = ratioValue.get();
+        if (name == null || ratio == null) {
+            logger.warning("Stat name (" + name + ") and/or ratio (" + ratio + ") were null.");
             return null;
         }
 
-        return Stat.create(s, r);
+        StatFactory factory = Stat.getFactoryByName(name);
+        if (factory == null) {
+            logger.warning("StatFactory was null (" + name + ").");
+            return null;
+        }
+        return factory.create(ratio);
     }
 
     public static void setStatFor(Creature trader, Stat stat) {

@@ -5,15 +5,16 @@ import mod.wurmunlimited.bml.BML;
 import mod.wurmunlimited.bml.BMLBuilder;
 import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
 import mod.wurmunlimited.npcs.customtrader.stats.Stat;
+import mod.wurmunlimited.npcs.customtrader.stats.StatFactory;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 public class StatTraderManagementQuestion extends PlaceOrManageTraderQuestion {
     private final Creature trader;
     private final String currentTag;
-    private final String[] stats = Stat.getAll();
+    private final List<StatFactory> stats = Stat.getAll();
     private final Stat currentStat;
 
     public StatTraderManagementQuestion(Creature responder, Creature trader) {
@@ -32,11 +33,11 @@ public class StatTraderManagementQuestion extends PlaceOrManageTraderQuestion {
             checkSaveName(trader);
 
             int newStatIndex = getIntegerOrDefault("stat", -1);
-            String newStat;
+            StatFactory newStat;
             try {
-                newStat = stats[newStatIndex];
+                newStat = stats.get(newStatIndex);
             } catch (ArrayIndexOutOfBoundsException e) {
-                newStat = currentStat.name;
+                newStat = currentStat.getFactory();
                 responder.getCommunicator().sendSafeServerMessage("The trader didn't understand so selected " + currentStat.name + ".");
             }
 
@@ -53,8 +54,8 @@ public class StatTraderManagementQuestion extends PlaceOrManageTraderQuestion {
             }
 
             Stat stat;
-            if (!newStat.equals(currentStat.name) || ratio != currentStat.ratio) {
-                stat = Stat.create(newStat, ratio);
+            if (!newStat.label().equals(currentStat.name) || ratio != currentStat.ratio) {
+                stat = newStat.create(ratio);
             } else {
                 stat = currentStat;
             }
@@ -80,10 +81,9 @@ public class StatTraderManagementQuestion extends PlaceOrManageTraderQuestion {
 
     @Override
     public void sendQuestion() {
-        List<String> statsList = Arrays.asList(stats);
         BML bml = middleBML(new BMLBuilder(id), getNameWithoutPrefix(trader.getName()))
                      .text("Stat:")
-                     .dropdown("stat", statsList, statsList.indexOf(currentStat.name))
+                     .dropdown("stat", stats.stream().map(StatFactory::label).collect(Collectors.joining(",")), stats.indexOf(currentStat.getFactory()))
                      .newLine()
                      .text("How many of stat is worth 1i.  e.g. using karma, to buy a 10i item with a ratio of 0.5 it would only take 5 karma.")
                      .harray(b -> b.label("Ratio:").entry("ratio", Float.toString(currentStat.ratio), 6))

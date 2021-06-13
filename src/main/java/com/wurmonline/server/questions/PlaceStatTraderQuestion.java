@@ -6,17 +6,19 @@ import mod.wurmunlimited.bml.BML;
 import mod.wurmunlimited.bml.BMLBuilder;
 import mod.wurmunlimited.npcs.customtrader.StatTraderTemplate;
 import mod.wurmunlimited.npcs.customtrader.stats.Stat;
+import mod.wurmunlimited.npcs.customtrader.stats.StatFactory;
 
-import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 public class PlaceStatTraderQuestion extends PlaceOrManageTraderQuestion {
     private static final Random r = new Random();
     private final VolaTile tile;
     private final int floorLevel;
     private Template template;
-    private final String[] stats = Stat.getAll();
+    private final List<StatFactory> stats = Stat.getAll();
 
     public PlaceStatTraderQuestion(Creature performer, VolaTile tile, int floorLevel) {
         super(performer, "Set Up Stat Trader", -10);
@@ -30,11 +32,11 @@ public class PlaceStatTraderQuestion extends PlaceOrManageTraderQuestion {
         Creature responder = getResponder();
 
         int newStatIndex = getIntegerOrDefault("stat", -1);
-        String newStat;
+        StatFactory newStat;
         try {
-            newStat = stats[newStatIndex];
+            newStat = stats.get(newStatIndex);
         } catch (ArrayIndexOutOfBoundsException e) {
-            newStat = stats[0];
+            newStat = stats.get(0);
             responder.getCommunicator().sendSafeServerMessage("The trader didn't understand so selected " + newStat + ".");
         }
 
@@ -50,7 +52,7 @@ public class PlaceStatTraderQuestion extends PlaceOrManageTraderQuestion {
             responder.getCommunicator().sendSafeServerMessage("The trader didn't understand so set a ratio of " + ratio + ".");
         }
 
-        Stat stat = Stat.create(newStat, ratio);
+        Stat stat = newStat.create(ratio);
 
         if (stat == null) {
             responder.getCommunicator().sendNormalServerMessage("Something went wrong and the trader was not created.");
@@ -80,7 +82,7 @@ public class PlaceStatTraderQuestion extends PlaceOrManageTraderQuestion {
                              .text("This trader will take a certain type of stat (e.g. karma, favor, etc.) in exchange for goods.");
         bml = middleBML(bml, "")
                              .text("Stat:")
-                             .dropdown("stat", Arrays.asList(stats), 0)
+                             .dropdown("stat", stats.stream().map(StatFactory::label).collect(Collectors.joining(",")), 0)
                              .newLine()
                              .text("How many of stat is worth 1i.  e.g. using karma, to buy a 5i item with a ratio of 0.5 it would only take 5 karma.")
                              .harray(b -> b.label("Ratio:").entry("ratio", "1.0", 6))

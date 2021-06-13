@@ -206,7 +206,7 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
 
     @Test
     void testGetStatFor() {
-        Stat stat = Karma.create(Karma.class.getSimpleName(), 1.25f);
+        Stat stat = create(Karma.class.getSimpleName(), 1.25f);
         Creature trader = factory.createNewStatTrader(stat);
 
         Stat fetchedStat = CustomTraderDatabase.getStatFor(trader);
@@ -216,11 +216,11 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
 
     @Test
     void testStatProperlySet() {
-        Stat stat = Karma.create(Karma.class.getSimpleName(), 1.25f);
+        Stat stat = create(Karma.class.getSimpleName(), 1.25f);
         Creature trader = factory.createNewStatTrader(stat);
         assert Objects.requireNonNull(CustomTraderDatabase.getStatFor(trader)).name.equals("Karma");
 
-        Stat newStat = Health.create(Health.class.getSimpleName(), 2.25f);
+        Stat newStat = create(Health.class.getSimpleName(), 2.25f);
         CustomTraderDatabase.setStatFor(trader, newStat);
 
         Stat fetchedStat = CustomTraderDatabase.getStatFor(trader);

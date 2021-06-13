@@ -3,22 +3,31 @@ package mod.wurmunlimited.npcs.customtrader.stats;
 import com.wurmonline.server.creatures.Creature;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public abstract class Stat {
-    private static final Map<String, StatFactory> stats = new HashMap<>();
+    private static final List<StatFactory> stats = new ArrayList<>();
+    private static final Map<String, StatFactory> statsByName = new HashMap<>();
     public final String name;
     public final float ratio;
 
-    protected Stat(String name, float ratio) {
-        this.name = name;
+    protected Stat(float ratio) {
+        this.name = getFactory().name();
         this.ratio = ratio;
     }
 
     public abstract boolean takeStatFrom(Creature creature, int amount);
 
     public abstract int creatureHas(Creature creature);
+
+    public abstract StatFactory getFactory();
+
+    public boolean useBlocked(Creature creature, Creature trader) {
+        return false;
+    }
 
     @Override
     public boolean equals(Object other) {
@@ -30,15 +39,22 @@ public abstract class Stat {
         return false;
     }
 
-    public static @Nullable Stat create(String name, float ratio) {
-        return stats.get(name).create(ratio);
+    public static List<StatFactory> getAll() {
+        return stats;
     }
 
-    public static String[] getAll() {
-        return stats.keySet().stream().sorted().toArray(String[]::new);
+    protected static void add(StatFactory factory) {
+        stats.add(factory);
     }
 
-    protected static void add(String name, StatFactory factory) {
-        stats.put(name, factory);
+    public static @Nullable StatFactory getFactoryByName(String name) {
+        if (statsByName.size() != stats.size()) {
+            statsByName.clear();
+            for (StatFactory factory : stats) {
+                statsByName.put(factory.name(), factory);
+            }
+        }
+
+        return statsByName.get(name);
     }
 }

@@ -16,7 +16,6 @@ import mod.wurmunlimited.npcs.customtrader.stock.Enchantment;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Arrays;
 import java.util.Properties;
 
 import static mod.wurmunlimited.Assert.*;
@@ -34,8 +33,12 @@ public class StatTraderManagementQuestionTests extends CustomTraderTest {
     protected void setUp() throws Throwable {
         super.setUp();
         gm = factory.createNewPlayer();
-        stat = Karma.create(Karma.class.getSimpleName(), 1.0f);
+        stat = create(Karma.class.getSimpleName(), 1.0f);
         trader = factory.createNewStatTrader(stat);
+    }
+
+    private int indexOf(String name) {
+        return Stat.getAll().indexOf(Stat.getFactoryByName(name));
     }
 
     @Test
@@ -388,7 +391,7 @@ public class StatTraderManagementQuestionTests extends CustomTraderTest {
 
     @Test
     void testSetStat() {
-        assert Arrays.asList(Stat.getAll()).indexOf(stat.name) != 1;
+        assert indexOf(stat.name) != 1;
         Properties properties = new Properties();
         properties.setProperty("confirm", "true");
         properties.setProperty("stat", "1");
@@ -431,7 +434,7 @@ public class StatTraderManagementQuestionTests extends CustomTraderTest {
 
     @Test
     void testSetStatAndRatio() {
-        assert Arrays.asList(Stat.getAll()).indexOf(stat.name) != 1;
+        assert indexOf(stat.name) != 1;
         Properties properties = new Properties();
         properties.setProperty("confirm", "true");
         properties.setProperty("stat", "1");
@@ -447,12 +450,12 @@ public class StatTraderManagementQuestionTests extends CustomTraderTest {
 
     @Test
     void testCurrentStatSetProperly() {
-        int i = Arrays.asList(Stat.getAll()).indexOf(Health.class.getSimpleName());
+        int i = indexOf(Health.class.getSimpleName());
         if (i != 0) {
-            CustomTraderDatabase.setStatFor(trader, Health.create(Health.class.getSimpleName(), 1.25f));
+            CustomTraderDatabase.setStatFor(trader, create(Health.class.getSimpleName(), 1.25f));
         } else {
-            i = Arrays.asList(Stat.getAll()).indexOf(Favor.class.getSimpleName());
-            CustomTraderDatabase.setStatFor(trader, Favor.create(Favor.class.getSimpleName(), 1.25f));
+            i = indexOf(Favor.class.getSimpleName());
+            CustomTraderDatabase.setStatFor(trader, create(Favor.class.getSimpleName(), 1.25f));
         }
 
         new StatTraderManagementQuestion(gm, trader).sendQuestion();

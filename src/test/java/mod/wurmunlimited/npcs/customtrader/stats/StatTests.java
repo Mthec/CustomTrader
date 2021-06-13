@@ -5,6 +5,8 @@ import mod.wurmunlimited.npcs.customtrader.CustomTraderObjectsFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Objects;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public abstract class StatTests {
@@ -14,6 +16,10 @@ public abstract class StatTests {
     protected abstract void giveStat(Player player, int amount);
     protected abstract int getHas(Player player);
     protected void postTest(Player player) {}
+
+    protected Stat create(String name, float ratio) {
+        return Objects.requireNonNull(Stat.getFactoryByName(name)).create(ratio);
+    }
 
     @BeforeEach
     void setUp() throws Exception {

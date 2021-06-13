@@ -7,10 +7,28 @@ import java.util.logging.Logger;
 
 public class Favor extends Stat {
     private static final Logger logger = Logger.getLogger(Favor.class.getName());
+    private static final StatFactory factory = new StatFactory() {
+        private final String name = Favor.class.getSimpleName();
+
+        @Override
+        public String label() {
+            return name;
+        }
+
+        @Override
+        public String name() {
+            return name;
+        }
+
+        @Override
+        public Stat create(float ratio) {
+            return new Favor(ratio);
+        }
+    };
     private static final float minimumFavor = 0.0001f;
 
-    private Favor(float ratio) {
-        super(Favor.class.getSimpleName(), ratio);
+    protected Favor(float ratio) {
+        super(ratio);
     }
 
     @Override
@@ -38,7 +56,12 @@ public class Favor extends Stat {
         return Math.max(0, (int)(creature.getFavor() * ratio));
     }
 
+    @Override
+    public StatFactory getFactory() {
+        return factory;
+    }
+
     public static void register() {
-        Stat.add(Favor.class.getSimpleName(), Favor::new);
+        Stat.add(factory);
     }
 }

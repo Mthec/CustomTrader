@@ -27,6 +27,8 @@ public class StatTraderTradeHandler extends TradeHandler {
         if (stat == null) {
             trade.creatureOne.getCommunicator().sendAlertServerMessage(trader.getName() + " looks confused and ends the trade.");
             trade.end(trader, true);
+        } else if (stat.useBlocked(trade.creatureOne, trader)) {
+            trade.end(trader, true);
         } else {
             trade.creatureOne.getCommunicator().sendSafeServerMessage(trader.getName() + " says 'I will trade my goods in exchange for " + stat.name + ", " +
                                                                               "I see you have " + stat.creatureHas(trade.creatureOne) + ".'");
