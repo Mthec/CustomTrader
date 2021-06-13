@@ -58,15 +58,15 @@ public abstract class PlaceOrManageTraderQuestion extends CustomTraderQuestionEx
                 }
             } else {
                 responder.getCommunicator().sendNormalServerMessage("The trader didn't like that name, so they shall remain " + trader.getName() + ".");
-                return trader.getName();
+                return getNameWithoutPrefix(trader.getName());
             }
         }
 
-        return getPrefix() + name;
+        return name;
     }
 
     protected void checkSaveName(Creature trader) {
-        String fullName = getName(trader.getSex(), trader);
+        String fullName = getPrefix() + getName(trader.getSex(), trader);
         if (!fullName.equals(trader.getName())) {
             try {
                 saveCreatureName(trader, fullName);

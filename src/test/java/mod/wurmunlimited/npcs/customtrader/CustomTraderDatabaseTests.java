@@ -4,6 +4,9 @@ import com.wurmonline.server.creatures.Creature;
 import com.wurmonline.server.items.ItemList;
 import com.wurmonline.server.spells.Spells;
 import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
+import mod.wurmunlimited.npcs.customtrader.stats.Health;
+import mod.wurmunlimited.npcs.customtrader.stats.Karma;
+import mod.wurmunlimited.npcs.customtrader.stats.Stat;
 import mod.wurmunlimited.npcs.customtrader.stock.Enchantment;
 import mod.wurmunlimited.npcs.customtrader.stock.StockInfo;
 import mod.wurmunlimited.npcs.customtrader.stock.StockItem;
@@ -14,6 +17,7 @@ import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.*;
 import java.util.List;
+import java.util.Objects;
 
 import static mod.wurmunlimited.npcs.customtrader.CustomTraderDatabaseAssertions.*;
 import static mod.wurmunlimited.npcs.customtrader.DatabaseActions.select;
@@ -182,17 +186,46 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
     // Currency
 
     @Test
-    void testCurrencyProperlySet() {
-        Creature trader = factory.createNewCurrencyTrader(ItemList.sprout, 10);
-
-        assertEquals(ItemList.sprout, CustomTraderDatabase.getCurrencyFor(trader));
-    }
-
-    @Test
     void testGetCurrencyFor() {
         Creature trader = factory.createNewCurrencyTrader(ItemList.acorn, 1);
 
         assertEquals(ItemList.acorn, CustomTraderDatabase.getCurrencyFor(trader));
+    }
+
+    @Test
+    void testCurrencyProperlySet() {
+        Creature trader = factory.createNewCurrencyTrader(ItemList.sprout, 10);
+        assert CustomTraderDatabase.getCurrencyFor(trader) == ItemList.sprout;
+
+        CustomTraderDatabase.setCurrencyFor(trader, ItemList.diamond);
+
+        assertEquals(ItemList.diamond, CustomTraderDatabase.getCurrencyFor(trader));
+    }
+
+    // Stat
+
+    @Test
+    void testGetStatFor() {
+        Stat stat = Karma.create(Karma.class.getSimpleName(), 1.25f);
+        Creature trader = factory.createNewStatTrader(stat);
+
+        Stat fetchedStat = CustomTraderDatabase.getStatFor(trader);
+        assertEquals(Objects.requireNonNull(stat).name, Objects.requireNonNull(fetchedStat).name);
+        assertEquals(stat.ratio, fetchedStat.ratio);
+    }
+
+    @Test
+    void testStatProperlySet() {
+        Stat stat = Karma.create(Karma.class.getSimpleName(), 1.25f);
+        Creature trader = factory.createNewStatTrader(stat);
+        assert Objects.requireNonNull(CustomTraderDatabase.getStatFor(trader)).name.equals("Karma");
+
+        Stat newStat = Health.create(Health.class.getSimpleName(), 2.25f);
+        CustomTraderDatabase.setStatFor(trader, newStat);
+
+        Stat fetchedStat = CustomTraderDatabase.getStatFor(trader);
+        assertEquals(Objects.requireNonNull(newStat).name, Objects.requireNonNull(fetchedStat).name);
+        assertEquals(newStat.ratio, fetchedStat.ratio);
     }
 
     // Stock

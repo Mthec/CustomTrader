@@ -450,6 +450,8 @@ public abstract class OtherTraderTradingWindow<T extends Trade> extends TradingW
 
             if (CustomTraderMod.isOtherTrader(watcher)) {
                 shop.addMoneyEarned(tradeValueCounter);
+            } else if (CustomTraderMod.isOtherTrader(windowOwner)) {
+                windowOwner.getShop().addMoneyEarned(tradeValueCounter);
             }
         } else {
             this.windowOwner.getCommunicator().sendAlertServerMessage("There is a bug in the trade system. This shouldn't happen. Please report.");

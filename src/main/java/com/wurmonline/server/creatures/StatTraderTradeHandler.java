@@ -34,7 +34,24 @@ public class StatTraderTradeHandler extends TradeHandler {
     }
 
     @Override
-    void addItemsToTrade() {}
+    public void addItemsToTrade() {
+        if (stat == null) {
+            trade.creatureOne.getCommunicator().sendAlertServerMessage(trader.getName() + " looks confused and ends the trade.");
+            trade.end(trader, true);
+            return;
+        }
+
+        if (trade != null) {
+            TradingWindow myOffers = trade.getTradingWindow(1);
+            myOffers.startReceivingItems();
+
+            for (Item item : trader.getInventory().getItems()) {
+                myOffers.addItem(item);
+            }
+
+            myOffers.stopReceivingItems();
+        }
+    }
 
     @Override
     public int getTraderSellPriceForItem(Item item, TradingWindow window) {
@@ -53,7 +70,7 @@ public class StatTraderTradeHandler extends TradeHandler {
     }
 
     @Override
-    void balance() {
+    public void balance() {
         if (!balanced) {
             if (!waiting) {
                 TradingWindow sellWindow = trade.getTradingWindow(3);
@@ -65,10 +82,7 @@ public class StatTraderTradeHandler extends TradeHandler {
 
                 if (diff > 0L) {
                     waiting = true;
-                    trade.creatureOne.getCommunicator().sendSafeServerMessage(trader.getName() + " demands " + diff + " " + stat.name + " to make the trade.");
-                } else if (diff < 0L) {
-                    trade.setSatisfied(trader, true, this.trade.getCurrentCounter());
-                    balanced = true;
+                    trade.creatureOne.getCommunicator().sendSafeServerMessage(trader.getName() + " demands " + diff + " more " + stat.name + " to make the trade.");
                 } else {
                     trade.setSatisfied(trader, true, trade.getCurrentCounter());
                     balanced = true;

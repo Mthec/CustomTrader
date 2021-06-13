@@ -7,10 +7,11 @@ import com.wurmonline.server.players.Player;
 import mod.wurmunlimited.npcs.customtrader.CustomTraderMod;
 import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
 
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public abstract class OtherTraderTrade extends Trade {
+public abstract class OtherTraderTrade<V> extends Trade {
     protected static final Logger logger = Logger.getLogger(OtherTraderTrade.class.getName());
     protected final TradingWindow creatureOneOfferWindow;
     protected final TradingWindow creatureTwoOfferWindow;
@@ -20,18 +21,18 @@ public abstract class OtherTraderTrade extends Trade {
     protected boolean creatureTwoSatisfied = false;
     protected int currentCounter = -1;
 
-    protected OtherTraderTrade(Creature player, Creature trader) {
+    protected OtherTraderTrade(Creature player, Creature trader, Supplier<V> value) {
         creatureOne = player;
         creatureOne.startTrading();
         creatureTwo = trader;
         creatureTwo.startTrading();
-        creatureTwoOfferWindow = createTradingWindow(trader, player, true, 1L);
-        creatureOneOfferWindow = createTradingWindow(player, trader, true, 2L);
-        creatureOneRequestWindow = createTradingWindow(trader, player, false, 3L);
-        creatureTwoRequestWindow = createTradingWindow(player, trader, false, 4L);
+        creatureTwoOfferWindow = createTradingWindow(trader, player, true, 1L, value);
+        creatureOneOfferWindow = createTradingWindow(player, trader, true, 2L, value);
+        creatureOneRequestWindow = createTradingWindow(trader, player, false, 3L, value);
+        creatureTwoRequestWindow = createTradingWindow(player, trader, false, 4L, value);
     }
 
-    protected abstract TradingWindow createTradingWindow(Creature owner, Creature watcher, boolean offer, long wurmId);
+    protected abstract TradingWindow createTradingWindow(Creature owner, Creature watcher, boolean offer, long wurmId, Supplier<V> value);
 
     @Override
     public void addShopDiff(long money) {}

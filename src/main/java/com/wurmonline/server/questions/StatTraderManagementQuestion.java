@@ -36,7 +36,7 @@ public class StatTraderManagementQuestion extends PlaceOrManageTraderQuestion {
             try {
                 newStat = stats[newStatIndex];
             } catch (ArrayIndexOutOfBoundsException e) {
-                newStat = null;
+                newStat = currentStat.name;
                 responder.getCommunicator().sendSafeServerMessage("The trader didn't understand so selected " + currentStat.name + ".");
             }
 
@@ -53,9 +53,7 @@ public class StatTraderManagementQuestion extends PlaceOrManageTraderQuestion {
             }
 
             Stat stat;
-            if (newStat == null && ratio != currentStat.ratio) {
-                stat = Stat.create(currentStat.name, ratio);
-            } else if (ratio != currentStat.ratio) {
+            if (!newStat.equals(currentStat.name) || ratio != currentStat.ratio) {
                 stat = Stat.create(newStat, ratio);
             } else {
                 stat = currentStat;
@@ -74,7 +72,7 @@ public class StatTraderManagementQuestion extends PlaceOrManageTraderQuestion {
         } else if (wasSelected("edit")) {
             new CustomTraderEditTags(getResponder()).sendQuestion();
         } else if (wasSelected("list")) {
-            new CustomTraderItemList(getResponder(), trader, PaymentType.coin).sendQuestion();
+            new CustomTraderItemList(getResponder(), trader, PaymentType.other).sendQuestion();
         } else if (wasSelected("dismiss")) {
             tryDismiss(trader, "stat");
         }
@@ -87,7 +85,7 @@ public class StatTraderManagementQuestion extends PlaceOrManageTraderQuestion {
                      .text("Stat:")
                      .dropdown("stat", statsList, statsList.indexOf(currentStat.name))
                      .newLine()
-                     .text("How many of stat is worth 1i.  e.g. using karma, to buy a 5i item with a ratio of 0.5 it would take 10 karma.")
+                     .text("How many of stat is worth 1i.  e.g. using karma, to buy a 10i item with a ratio of 0.5 it would only take 5 karma.")
                      .harray(b -> b.label("Ratio:").entry("ratio", Float.toString(currentStat.ratio), 6))
                      .newLine();
 

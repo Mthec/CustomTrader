@@ -101,7 +101,7 @@ public class CustomTraderItemList extends CustomTraderQuestionExtension {
                                      int rowNum = rowNumber.getAndIncrement();
                                      return b.label(sb.toString())
                                              .label(df.format(item.item.ql))
-                                             .label((paymentType == PaymentType.currency) ? String.valueOf(item.item.price) : new Change(item.item.price).getChangeShortString())
+                                             .label((paymentType == PaymentType.coin) ? new Change(item.item.price).getChangeShortString() : String.valueOf(item.item.price))
                                              .label(WeightHelper.toString(item.item.weight))
                                              .label(String.valueOf(item.item.enchantments.length))
                                              .label(String.valueOf(item.item.aux))

@@ -6,44 +6,16 @@ import com.wurmonline.server.items.ItemList;
 import com.wurmonline.server.zones.VolaTile;
 import com.wurmonline.server.zones.Zones;
 import mod.wurmunlimited.WurmObjectsFactory;
-
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import mod.wurmunlimited.npcs.customtrader.stats.Karma;
+import mod.wurmunlimited.npcs.customtrader.stats.Stat;
 
 public class CustomTraderObjectsFactory extends WurmObjectsFactory {
-    private static final List<Character> alphabet = IntStream.rangeClosed('a', 'z').mapToObj(c -> (char)c).collect(Collectors.toList());
-    private static final List<Iterator<Character>> chars = new ArrayList<>();
-
     public CustomTraderObjectsFactory() throws Exception {
         super();
         new CustomTraderTemplate().createCreateTemplateBuilder().build();
         new CurrencyTraderTemplate().createCreateTemplateBuilder().build();
+        new StatTraderTemplate().createCreateTemplateBuilder().build();
         CustomTraderMod.namePrefix = "Trader";
-    }
-
-    private static String randomName(String baseName) {
-        if (chars.isEmpty()) {
-            chars.add(alphabet.iterator());
-        }
-
-        int idx = 0;
-        Iterator<Character> toAdd = null;
-        List<String> characters = new ArrayList<>();
-        while (idx != chars.size()) {
-            Iterator<Character> iterator = chars.get(idx++);
-            if (iterator.hasNext()) {
-                characters.add(iterator.next().toString());
-            } else if (idx == chars.size()) {
-                chars.add(alphabet.iterator());
-            } else {
-                chars.set(idx, alphabet.iterator());
-            }
-        }
-
-        return CustomTraderMod.namePrefix + "_" + baseName + String.join("", characters);
     }
 
     public Creature createNewCustomTrader(VolaTile tile, String name, byte sex, byte kingdom, String tag) {
@@ -92,6 +64,28 @@ public class CustomTraderObjectsFactory extends WurmObjectsFactory {
 
     public Creature createNewCurrencyTrader(String tag) {
         return createNewCurrencyTrader(Zones.getOrCreateTile(123, 321, true), randomName("Bob"), (byte)0, (byte)0, ItemList.medallionHota, tag);
+    }
+
+    public Creature createNewStatTrader() {
+        return createNewStatTrader(Stat.create(Karma.class.getSimpleName(), 1.0f));
+    }
+
+    public Creature createNewStatTrader(Stat stat) {
+        return createNewStatTrader(Zones.getOrCreateTile(123, 321, true), randomName("George"), (byte)0, (byte)0, stat, "");
+    }
+
+    public Creature createNewStatTrader(VolaTile tile, String name, byte sex, byte kingdom, Stat stat, String tag) {
+        Creature trader;
+        try {
+            trader = StatTraderTemplate.createNewTrader(tile, 0, name, sex, kingdom, stat, tag);
+            creatures.put(trader.getWurmId(), trader);
+            trader.createPossessions();
+            attachFakeCommunicator(trader);
+
+            return trader;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void addShop(Creature creature, FakeShop shop) {

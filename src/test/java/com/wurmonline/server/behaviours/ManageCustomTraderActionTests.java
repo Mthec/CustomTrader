@@ -6,6 +6,7 @@ import com.wurmonline.server.items.ItemList;
 import com.wurmonline.server.players.Player;
 import com.wurmonline.server.questions.CurrencyTraderManagementQuestion;
 import com.wurmonline.server.questions.CustomTraderManagementQuestion;
+import com.wurmonline.server.questions.StatTraderManagementQuestion;
 import mod.wurmunlimited.npcs.customtrader.CustomTraderTest;
 import org.gotti.wurmunlimited.modsupport.actions.ActionEntryBuilder;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,6 +24,7 @@ public class ManageCustomTraderActionTests extends CustomTraderTest {
     private Player nonGm;
     private Creature customTrader;
     private Creature currencyTrader;
+    private Creature statTrader;
     private Item wand;
     private ManageCustomTraderAction action;
     private final Action act = mock(Action.class);
@@ -36,6 +38,7 @@ public class ManageCustomTraderActionTests extends CustomTraderTest {
         gm.setPower((byte)2);
         customTrader = factory.createNewCustomTrader();
         currencyTrader = factory.createNewCurrencyTrader();
+        statTrader = factory.createNewStatTrader();
         nonGm = factory.createNewPlayer();
         wand = factory.createNewItem(ItemList.wandGM);
     }
@@ -85,6 +88,14 @@ public class ManageCustomTraderActionTests extends CustomTraderTest {
         assertTrue(action.action(act, gm, wand, currencyTrader, action.getActionId(), 0f));
         assertEquals(1, factory.getCommunicator(gm).getBml().length);
         new CurrencyTraderManagementQuestion(gm, currencyTrader).sendQuestion();
+        assertThat(gm, bmlEqual());
+    }
+
+    @Test
+    void testActionStatTrader() {
+        assertTrue(action.action(act, gm, wand, statTrader, action.getActionId(), 0f));
+        assertEquals(1, factory.getCommunicator(gm).getBml().length);
+        new StatTraderManagementQuestion(gm, statTrader).sendQuestion();
         assertThat(gm, bmlEqual());
     }
 

@@ -6,6 +6,7 @@ import java.util.logging.Logger;
 
 public class Karma extends Stat {
     private static final Logger logger = Logger.getLogger(Karma.class.getName());
+
     private Karma(float ratio) {
         super(Karma.class.getSimpleName(), ratio);
     }
@@ -29,7 +30,7 @@ public class Karma extends Stat {
         return Math.max(0, (int)(creature.getKarma() * ratio));
     }
 
-    static {
-        Stat.stats.put(Karma.class.getSimpleName(), Karma::new);
+    public static void register() {
+        Stat.add(Karma.class.getSimpleName(), Karma::new);
     }
 }

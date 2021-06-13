@@ -82,7 +82,7 @@ public class PlaceStatTraderQuestion extends PlaceOrManageTraderQuestion {
                              .text("Stat:")
                              .dropdown("stat", Arrays.asList(stats), 0)
                              .newLine()
-                             .text("How many of stat is worth 1i.  e.g. using karma, to buy a 5i item with a ratio of 0.5 it would take 10 karma.")
+                             .text("How many of stat is worth 1i.  e.g. using karma, to buy a 5i item with a ratio of 0.5 it would only take 5 karma.")
                              .harray(b -> b.label("Ratio:").entry("ratio", "1.0", 6))
                              .newLine();
 

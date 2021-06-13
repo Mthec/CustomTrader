@@ -16,6 +16,7 @@ public class CustomTraderItemsConfigurationQuestion extends CustomTraderQuestion
     private final Creature trader;
     private ItemDefinitionStage stage = ItemDefinitionStage.TEMPLATE;
     private final PaymentType paymentType;
+    private final String priceSuffix;
 
     // Item Settings
     private Template template;
@@ -43,6 +44,19 @@ public class CustomTraderItemsConfigurationQuestion extends CustomTraderQuestion
         details = Details._default(materials.getIndexOf(template.itemTemplate.getMaterial()), template.itemTemplate.getWeightGrams());
         enchantments = new Enchantments();
         restocking = Restocking._default();
+
+        switch (paymentType) {
+            case coin:
+                priceSuffix = "irons";
+                break;
+            case currency:
+                priceSuffix = "currency";
+                break;
+            default:
+            case other:
+                priceSuffix = "";
+                break;
+        }
     }
 
     public CustomTraderItemsConfigurationQuestion(Creature responder, Creature trader, PaymentType paymentType, ItemDefinitionStage stage, Template template, Details details, Enchantments enchantments, Restocking restocking) {
@@ -381,7 +395,7 @@ public class CustomTraderItemsConfigurationQuestion extends CustomTraderQuestion
                         .newLine()
                         .harray(b -> b.label("Price").spacer()
                                       .entry("price", Integer.toString(details.price), 10).spacer()
-                                      .If(paymentType == PaymentType.coin, b2 -> b2.text("irons"), b2 -> b2.text("currency")))
+                                      .text(priceSuffix))
                         .newLine()
                         .label("Advanced:")
                         .harray(b -> b.label("Aux Byte").spacer().entry("aux", Byte.toString(details.aux), 3).spacer())

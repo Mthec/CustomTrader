@@ -8,7 +8,7 @@ public class Health extends Stat {
     private static final Logger logger = Logger.getLogger(Health.class.getName());
     private static final int maxDamage = 65535;
 
-    public Health(float ratio) {
+    private Health(float ratio) {
         super(Health.class.getSimpleName(), ratio);
     }
 
@@ -30,7 +30,7 @@ public class Health extends Stat {
         return Math.max(0, (int)((maxDamage - 1 - creature.getStatus().damage) * ratio));
     }
 
-    static {
-        Stat.stats.put(Health.class.getSimpleName(), Health::new);
+    public static void register() {
+        Stat.add(Health.class.getSimpleName(), Health::new);
     }
 }

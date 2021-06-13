@@ -2,27 +2,31 @@ package com.wurmonline.server.questions;
 
 import com.wurmonline.server.creatures.Creature;
 import com.wurmonline.server.creatures.FakeCreatureStatus;
-import com.wurmonline.server.items.ItemList;
 import com.wurmonline.server.items.Trade;
 import com.wurmonline.server.players.Player;
 import com.wurmonline.shared.util.StringUtilities;
 import mod.wurmunlimited.npcs.customtrader.CustomTraderMod;
 import mod.wurmunlimited.npcs.customtrader.CustomTraderTest;
 import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
+import mod.wurmunlimited.npcs.customtrader.stats.Favor;
+import mod.wurmunlimited.npcs.customtrader.stats.Health;
+import mod.wurmunlimited.npcs.customtrader.stats.Karma;
+import mod.wurmunlimited.npcs.customtrader.stats.Stat;
 import mod.wurmunlimited.npcs.customtrader.stock.Enchantment;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.Properties;
 
 import static mod.wurmunlimited.Assert.*;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
+public class StatTraderManagementQuestionTests extends CustomTraderTest {
     private Player gm;
     private Creature trader;
-    private int currency;
+    private Stat stat;
     private static final String tag = "MyTag";
     private static final String differentTag = "different";
 
@@ -30,25 +34,25 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
     protected void setUp() throws Throwable {
         super.setUp();
         gm = factory.createNewPlayer();
-        currency = ItemList.acorn;
-        trader = factory.createNewCurrencyTrader(currency, 1);
+        stat = Karma.create(Karma.class.getSimpleName(), 1.0f);
+        trader = factory.createNewStatTrader(stat);
     }
 
     @Test
     void testProperlyGetsCurrentTag() throws CustomTraderDatabase.FailedToUpdateTagException {
         CustomTraderDatabase.updateTag(trader, tag);
 
-        new CurrencyTraderManagementQuestion(gm, trader).sendQuestion();
+        new StatTraderManagementQuestion(gm, trader).sendQuestion();
         assertThat(gm, receivedBMLContaining(tag));
     }
 
     @Test
     void testContainsAllTags() throws CustomTraderDatabase.FailedToUpdateTagException {
-        CustomTraderDatabase.updateTag(factory.createNewCurrencyTrader(), "tag1");
-        CustomTraderDatabase.updateTag(factory.createNewCurrencyTrader(), "tag2");
-        CustomTraderDatabase.updateTag(factory.createNewCurrencyTrader(), "tag3");
+        CustomTraderDatabase.updateTag(factory.createNewStatTrader(), "tag1");
+        CustomTraderDatabase.updateTag(factory.createNewStatTrader(), "tag2");
+        CustomTraderDatabase.updateTag(factory.createNewStatTrader(), "tag3");
 
-        new CurrencyTraderManagementQuestion(gm, trader).sendQuestion();
+        new StatTraderManagementQuestion(gm, trader).sendQuestion();
         assertThat(gm, receivedBMLContaining("tag1,tag2,tag3"));
     }
 
@@ -62,7 +66,7 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
         Properties properties = new Properties();
         properties.setProperty("confirm", "true");
         properties.setProperty("name", name);
-        new CurrencyTraderManagementQuestion(gm, trader).answer(properties);
+        new StatTraderManagementQuestion(gm, trader).answer(properties);
 
         assertEquals(newName, trader.getName());
         assertEquals(newName, ((FakeCreatureStatus)trader.getStatus()).savedName);
@@ -77,7 +81,7 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
         Properties properties = new Properties();
         properties.setProperty("confirm", "true");
         properties.setProperty("name", name);
-        new CurrencyTraderManagementQuestion(gm, trader).answer(properties);
+        new StatTraderManagementQuestion(gm, trader).answer(properties);
 
         assertEquals("MyPrefix_" + name, trader.getName());
         assertThat(gm, receivedMessageContaining("will now be known as MyPrefix_" + name));
@@ -90,7 +94,7 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
         Properties properties = new Properties();
         properties.setProperty("confirm", "true");
         properties.setProperty("name", "%Name");
-        new CurrencyTraderManagementQuestion(gm, trader).answer(properties);
+        new StatTraderManagementQuestion(gm, trader).answer(properties);
 
         assertEquals(name, trader.getName());
         assertThat(gm, receivedMessageContaining("shall remain " + name));
@@ -104,7 +108,7 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
         Properties properties = new Properties();
         properties.setProperty("confirm", "true");
         properties.setProperty("name", name);
-        new CurrencyTraderManagementQuestion(gm, trader).answer(properties);
+        new StatTraderManagementQuestion(gm, trader).answer(properties);
 
         assertEquals("Trader_" + name, trader.getName());
         assertThat(gm, didNotReceiveMessageContaining("will now be known as " + name));
@@ -119,12 +123,12 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
 
         Properties properties = new Properties();
         properties.setProperty("confirm", "true");
-        new CurrencyTraderManagementQuestion(gm, trader).answer(properties);
+        new StatTraderManagementQuestion(gm, trader).answer(properties);
 
         assertEquals("", CustomTraderDatabase.getTagFor(trader));
         assertEquals(1, CustomTraderDatabase.getStockFor(trader).length);
         assertEquals(1, trader.getInventory().getItems().size());
-        assertEquals(ItemList.acorn, CustomTraderDatabase.getCurrencyFor(trader));
+        assertEquals(stat, CustomTraderDatabase.getStatFor(trader));
     }
 
     @Test
@@ -132,7 +136,7 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
         Properties properties = new Properties();
         properties.setProperty("confirm", "true");
         properties.setProperty("tag", tag);
-        new CurrencyTraderManagementQuestion(gm, trader).answer(properties);
+        new StatTraderManagementQuestion(gm, trader).answer(properties);
 
         assertEquals(tag, CustomTraderDatabase.getTagFor(trader));
         assertThat(gm, receivedMessageContaining("tag was set"));
@@ -144,7 +148,7 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
         Properties properties = new Properties();
         properties.setProperty("confirm", "true");
         properties.setProperty("tag", differentTag);
-        new CurrencyTraderManagementQuestion(gm, trader).answer(properties);
+        new StatTraderManagementQuestion(gm, trader).answer(properties);
 
         assertEquals(differentTag, CustomTraderDatabase.getTagFor(trader));
         assertThat(gm, receivedMessageContaining("tag was set"));
@@ -156,7 +160,7 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
         Properties properties = new Properties();
         properties.setProperty("confirm", "true");
         properties.setProperty("tags", "1");
-        new CurrencyTraderManagementQuestion(gm, trader).answer(properties);
+        new StatTraderManagementQuestion(gm, trader).answer(properties);
 
         assertEquals(tag, CustomTraderDatabase.getTagFor(trader));
         assertThat(gm, receivedMessageContaining("tag was set"));
@@ -169,7 +173,7 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
         properties.setProperty("confirm", "true");
         properties.setProperty("tag", differentTag);
         properties.setProperty("tags", "1");
-        new CurrencyTraderManagementQuestion(gm, trader).answer(properties);
+        new StatTraderManagementQuestion(gm, trader).answer(properties);
 
         assertEquals(tag, CustomTraderDatabase.getTagFor(trader));
         assertThat(gm, receivedMessageContaining("tag was set"));
@@ -181,7 +185,7 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
         Properties properties = new Properties();
         properties.setProperty("confirm", "true");
         properties.setProperty("tag", "");
-        new CurrencyTraderManagementQuestion(gm, trader).answer(properties);
+        new StatTraderManagementQuestion(gm, trader).answer(properties);
 
         assertEquals("", CustomTraderDatabase.getTagFor(trader));
         assertThat(gm, receivedMessageContaining("unique inventory"));
@@ -198,7 +202,7 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
         Properties properties = new Properties();
         properties.setProperty("confirm", "true");
         properties.setProperty("tag", "");
-        new CurrencyTraderManagementQuestion(gm, trader).answer(properties);
+        new StatTraderManagementQuestion(gm, trader).answer(properties);
 
         assertThat(gm, receivedMessageContaining("unique inventory"));
         assertEquals(0, trader.getInventory().getItems().size());
@@ -214,7 +218,7 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
         Properties properties = new Properties();
         properties.setProperty("confirm", "true");
         properties.setProperty("tag", tag);
-        new CurrencyTraderManagementQuestion(gm, trader).answer(properties);
+        new StatTraderManagementQuestion(gm, trader).answer(properties);
 
         assertThat(gm, receivedMessageContaining("tag was set"));
         assertEquals(0, trader.getInventory().getItems().size());
@@ -231,7 +235,7 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
         Properties properties = new Properties();
         properties.setProperty("confirm", "true");
         properties.setProperty("tags", "1");
-        new CurrencyTraderManagementQuestion(gm, trader).answer(properties);
+        new StatTraderManagementQuestion(gm, trader).answer(properties);
 
         assertThat(gm, receivedMessageContaining("tag was set"));
         assertEquals(0, trader.getInventory().getItems().size());
@@ -249,7 +253,7 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
         Properties properties = new Properties();
         properties.setProperty("confirm", "true");
         properties.setProperty("empty", "true");
-        new CurrencyTraderManagementQuestion(gm, trader).answer(properties);
+        new StatTraderManagementQuestion(gm, trader).answer(properties);
 
         assertEquals(0, trader.getInventory().getItems().size());
         assertThat(gm, receivedMessageContaining("got rid"));
@@ -264,7 +268,7 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
         Properties properties = new Properties();
         properties.setProperty("confirm", "true");
         properties.setProperty("full", "true");
-        new CurrencyTraderManagementQuestion(gm, trader).answer(properties);
+        new StatTraderManagementQuestion(gm, trader).answer(properties);
 
         assertEquals(10, trader.getInventory().getItems().size());
         assertThat(gm, receivedMessageContaining("fully"));
@@ -283,7 +287,7 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
         properties.setProperty("confirm", "true");
         properties.setProperty("empty", "true");
         properties.setProperty("full", "true");
-        new CurrencyTraderManagementQuestion(gm, trader).answer(properties);
+        new StatTraderManagementQuestion(gm, trader).answer(properties);
 
         assertEquals(10, trader.getInventory().getItems().size());
         assertThat(gm, receivedMessageContaining("got rid"));
@@ -297,7 +301,7 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
 
         Properties properties = new Properties();
         properties.setProperty("edit", "true");
-        new CurrencyTraderManagementQuestion(gm, trader).answer(properties);
+        new StatTraderManagementQuestion(gm, trader).answer(properties);
         new CustomTraderEditTags(gm).sendQuestion();
 
         assertThat(gm, bmlEqual());
@@ -312,7 +316,7 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
         properties.setProperty("edit", "true");
         properties.setProperty("delete", "true");
         properties.setProperty("tag", tag);
-        new CurrencyTraderManagementQuestion(gm, trader).answer(properties);
+        new StatTraderManagementQuestion(gm, trader).answer(properties);
         new CustomTraderEditTags(gm).sendQuestion();
 
         assertThat(gm, bmlEqual());
@@ -327,8 +331,8 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
 
         Properties properties = new Properties();
         properties.setProperty("list", "true");
-        new CurrencyTraderManagementQuestion(gm, trader).answer(properties);
-        new CustomTraderItemList(gm, trader, PaymentType.currency).sendQuestion();
+        new StatTraderManagementQuestion(gm, trader).answer(properties);
+        new CustomTraderItemList(gm, trader, PaymentType.other).sendQuestion();
 
         assertThat(gm, bmlEqual());
     }
@@ -342,8 +346,8 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
         properties.setProperty("list", "true");
         properties.setProperty("delete", "true");
         properties.setProperty("tag", tag);
-        new CurrencyTraderManagementQuestion(gm, trader).answer(properties);
-        new CustomTraderItemList(gm, trader, PaymentType.currency).sendQuestion();
+        new StatTraderManagementQuestion(gm, trader).answer(properties);
+        new CustomTraderItemList(gm, trader, PaymentType.other).sendQuestion();
 
         assertThat(gm, bmlEqual());
         assertEquals("", CustomTraderDatabase.getTagFor(trader));
@@ -358,7 +362,7 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
 
         Properties properties = new Properties();
         properties.setProperty("dismiss", "true");
-        new CurrencyTraderManagementQuestion(gm, trader).answer(properties);
+        new StatTraderManagementQuestion(gm, trader).answer(properties);
 
         assertEquals(1, factory.getAllCreatures().size());
         assertThat(gm, receivedMessageContaining("dismiss"));
@@ -375,7 +379,7 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
 
         Properties properties = new Properties();
         properties.setProperty("dismiss", "true");
-        new CurrencyTraderManagementQuestion(gm, trader).answer(properties);
+        new StatTraderManagementQuestion(gm, trader).answer(properties);
 
         assertEquals(3, factory.getAllCreatures().size());
         assertThat(gm, receivedMessageContaining("is trading"));
@@ -383,25 +387,76 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
     }
 
     @Test
-    void testSetCurrency() {
+    void testSetStat() {
+        assert Arrays.asList(Stat.getAll()).indexOf(stat.name) != 1;
         Properties properties = new Properties();
         properties.setProperty("confirm", "true");
-        int templateIndex = 101;
-        EligibleTemplates.init();
-        EligibleTemplates template = new EligibleTemplates("");
-        int templateId = template.getTemplate(101).getTemplateId();
-        properties.setProperty("template", String.valueOf(templateIndex));
-        new CurrencyTraderManagementQuestion(gm, trader).answer(properties);
+        properties.setProperty("stat", "1");
+        new StatTraderManagementQuestion(gm, trader).answer(properties);
 
-        assertEquals(templateId, CustomTraderDatabase.getCurrencyFor(trader));
-        assertThat(gm, receivedMessageContaining("currency was set"));
+        Stat newStat = CustomTraderDatabase.getStatFor(trader);
+        assertNotNull(newStat);
+        assertNotEquals(stat.name, newStat.name);
+        assertEquals(stat.ratio, newStat.ratio);
+        assertThat(gm, receivedMessageContaining("will now collect"));
     }
 
     @Test
-    void testCurrentCurrencySetProperly() {
-        CustomTraderDatabase.setCurrencyFor(trader, ItemList.sprout);
-        new CurrencyTraderManagementQuestion(gm, trader).sendQuestion();
+    void testSetRatio() {
+        Properties properties = new Properties();
+        properties.setProperty("confirm", "true");
+        properties.setProperty("ratio", "0.25");
+        new StatTraderManagementQuestion(gm, trader).answer(properties);
 
-        assertThat(gm, receivedBMLContaining("default=\"" + new EligibleTemplates("").getIndexOf(ItemList.sprout) + "\""));
+        Stat newStat = CustomTraderDatabase.getStatFor(trader);
+        assertNotNull(newStat);
+        assertEquals(stat.name, newStat.name);
+        assertNotEquals(stat.ratio, newStat.ratio);
+        assertThat(gm, receivedMessageContaining("will now collect"));
+    }
+
+    @Test
+    void testRatioMustBePositive() {
+        Properties properties = new Properties();
+        properties.setProperty("confirm", "true");
+        properties.setProperty("ratio", "0.0");
+        new StatTraderManagementQuestion(gm, trader).answer(properties);
+
+        Stat newStat = CustomTraderDatabase.getStatFor(trader);
+        assertNotNull(newStat);
+        assertEquals(stat.name, newStat.name);
+        assertEquals(stat.ratio, newStat.ratio);
+        assertThat(gm, didNotReceiveMessageContaining("will now collect"));
+    }
+
+    @Test
+    void testSetStatAndRatio() {
+        assert Arrays.asList(Stat.getAll()).indexOf(stat.name) != 1;
+        Properties properties = new Properties();
+        properties.setProperty("confirm", "true");
+        properties.setProperty("stat", "1");
+        properties.setProperty("ratio", "0.25");
+        new StatTraderManagementQuestion(gm, trader).answer(properties);
+
+        Stat newStat = CustomTraderDatabase.getStatFor(trader);
+        assertNotNull(newStat);
+        assertNotEquals(stat.name, newStat.name);
+        assertNotEquals(stat.ratio, newStat.ratio);
+        assertThat(gm, receivedMessageContaining("will now collect"));
+    }
+
+    @Test
+    void testCurrentStatSetProperly() {
+        int i = Arrays.asList(Stat.getAll()).indexOf(Health.class.getSimpleName());
+        if (i != 0) {
+            CustomTraderDatabase.setStatFor(trader, Health.create(Health.class.getSimpleName(), 1.25f));
+        } else {
+            i = Arrays.asList(Stat.getAll()).indexOf(Favor.class.getSimpleName());
+            CustomTraderDatabase.setStatFor(trader, Favor.create(Favor.class.getSimpleName(), 1.25f));
+        }
+
+        new StatTraderManagementQuestion(gm, trader).sendQuestion();
+
+        assertThat(gm, receivedBMLContaining("default=\"" + i + "\""));
     }
 }

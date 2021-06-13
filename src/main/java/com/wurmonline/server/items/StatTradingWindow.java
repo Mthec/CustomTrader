@@ -4,6 +4,7 @@ import com.wurmonline.server.creatures.Creature;
 import com.wurmonline.server.players.Player;
 import mod.wurmunlimited.npcs.customtrader.stats.Stat;
 
+import java.util.function.Supplier;
 import java.util.logging.Logger;
 
 public class StatTradingWindow extends OtherTraderTradingWindow<StatTraderTrade> {
@@ -11,9 +12,9 @@ public class StatTradingWindow extends OtherTraderTradingWindow<StatTraderTrade>
     private final Stat stat;
     private boolean problems;
 
-    StatTradingWindow(Creature owner, Creature watcher, boolean offer, long wurmId, StatTraderTrade trade) {
+    StatTradingWindow(Creature owner, Creature watcher, boolean offer, long wurmId, StatTraderTrade trade, Supplier<Stat> value) {
         super(owner, watcher, offer, wurmId, trade);
-        this.stat = trade.stat;
+        stat = value.get();
     }
 
     @Override
@@ -45,6 +46,8 @@ public class StatTradingWindow extends OtherTraderTradingWindow<StatTraderTrade>
                     if (paymentRequired > stat.creatureHas(watcher)) {
                         windowOwner.getCommunicator().sendSafeServerMessage("Player does not have enough " + stat.name + ". Trade aborted.");
                         watcher.getCommunicator().sendSafeServerMessage("You do not have enough " + stat.name + ". Trade aborted.");
+
+                        return false;
                     }
                 }
             }

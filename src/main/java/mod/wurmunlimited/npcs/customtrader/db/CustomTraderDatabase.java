@@ -338,9 +338,10 @@ public class CustomTraderDatabase {
     public static void setStatFor(Creature trader, Stat stat) {
         try {
             execute(db -> {
-                PreparedStatement ps = db.prepareStatement("UPDATE stat_traders SET stat=? WHERE id=?");
+                PreparedStatement ps = db.prepareStatement("UPDATE stat_traders SET stat=?, ratio=? WHERE id=?");
                 ps.setString(1, stat.name);
-                ps.setLong(2, trader.getWurmId());
+                ps.setFloat(2, stat.ratio);
+                ps.setLong(3, trader.getWurmId());
 
                 ps.execute();
             });

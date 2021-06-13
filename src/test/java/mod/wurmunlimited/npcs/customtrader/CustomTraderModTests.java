@@ -1,8 +1,6 @@
 package mod.wurmunlimited.npcs.customtrader;
 
-import com.wurmonline.server.creatures.Creature;
-import com.wurmonline.server.creatures.CreatureTemplate;
-import com.wurmonline.server.creatures.CustomTraderTradeHandler;
+import com.wurmonline.server.creatures.*;
 import com.wurmonline.server.items.Item;
 import com.wurmonline.server.items.ItemList;
 import com.wurmonline.server.items.Trade;
@@ -189,37 +187,31 @@ public class CustomTraderModTests extends CustomTraderTest {
 
     @Test
     void testGetTradeHandler() throws Throwable {
-        CustomTraderDatabase.addStockItemTo(customTrader, num, num, num, b, b, num, new Enchantment[0], (byte)0, num, num, 0);
-        customTrader.getShop().setMoney(100);
-        normalTrader.getShop().setMoney(100);
+        Creature currencyTrader = factory.createNewCurrencyTrader();
+        Creature statTrader = factory.createNewStatTrader();
 
         InvocationHandler handler = new CustomTraderMod()::getTradeHandler;
         Method method = mock(Method.class);
         Object[] args = new Object[0];
         customTrader.setTrade(new Trade(factory.createNewPlayer(), customTrader));
+        currencyTrader.setTrade(new Trade(factory.createNewPlayer(), currencyTrader));
+        statTrader.setTrade(new Trade(factory.createNewPlayer(), statTrader));
         normalTrader.setTrade(new Trade(factory.createNewPlayer(), normalTrader));
 
         assert customTrader.getInventory().getItems().size() == 0;
         assertTrue(handler.invoke(customTrader, method, args) instanceof CustomTraderTradeHandler);
         verify(method, never()).invoke(customTrader, args);
+        assertTrue(handler.invoke(currencyTrader, method, args) instanceof CurrencyTraderTradeHandler);
+        verify(method, never()).invoke(currencyTrader, args);
+        assertTrue(handler.invoke(statTrader, method, args) instanceof StatTraderTradeHandler);
+        verify(method, never()).invoke(statTrader, args);
 
         assertNull(handler.invoke(normalTrader, method, args));
         verify(method, times(1)).invoke(normalTrader, args);
     }
 
-    @Test
-    void testCreatureCreation() throws Throwable {
-        Player gm = factory.createNewPlayer();
-        Item wand = factory.createNewItem(ItemList.wandGM);
+    private void checkCreatureCreation(Creature gm, InvocationHandler handler, Method method, Object[] args, int templateId) throws Throwable {
         String name = "Name";
-        int tileX = 250;
-        int tileY = 250;
-        int templateId = ReflectionUtil.getPrivateField(null, CustomTraderTemplate.class.getDeclaredField("templateId"));
-
-        InvocationHandler handler = new CustomTraderMod()::creatureCreation;
-        Method method = mock(Method.class);
-        Object[] args = new Object[] { new CreatureCreationQuestion(gm, "", "", wand.getWurmId(), tileX, tileY, -1, -10) };
-        ((CreatureCreationQuestion)args[0]).sendQuestion();
         int templateIndex = -1;
         int i = 0;
         //noinspection unchecked
@@ -246,11 +238,29 @@ public class CustomTraderModTests extends CustomTraderTest {
         verify(method, never()).invoke(null, args);
         assertEquals(1, factory.getAllCreatures().size());
         Creature customTrader = factory.getAllCreatures().iterator().next();
+        assertEquals(templateId, customTrader.getTemplateId());
         assertEquals("Trader_" + name, customTrader.getName());
         assertEquals((byte)1, customTrader.getSex());
         assertEquals(gm.isOnSurface(), customTrader.isOnSurface());
         assertEquals(0, customTrader.getInventory().getItems().size());
         assertThat(gm, didNotReceiveMessageContaining("An error occurred"));
+    }
+
+    @Test
+    void testCreatureCreation() throws Throwable {
+        Player gm = factory.createNewPlayer();
+        Item wand = factory.createNewItem(ItemList.wandGM);
+        int tileX = 250;
+        int tileY = 250;
+
+        InvocationHandler handler = new CustomTraderMod()::creatureCreation;
+        Method method = mock(Method.class);
+        Object[] args = new Object[] { new CreatureCreationQuestion(gm, "", "", wand.getWurmId(), tileX, tileY, -1, -10) };
+        ((CreatureCreationQuestion)args[0]).sendQuestion();
+
+        checkCreatureCreation(gm, handler, method, args, ReflectionUtil.getPrivateField(null, CustomTraderTemplate.class.getDeclaredField("templateId")));
+        checkCreatureCreation(gm, handler, method, args, ReflectionUtil.getPrivateField(null, CurrencyTraderTemplate.class.getDeclaredField("templateId")));
+        checkCreatureCreation(gm, handler, method, args, ReflectionUtil.getPrivateField(null, StatTraderTemplate.class.getDeclaredField("templateId")));
     }
 
     @Test

@@ -8,7 +8,8 @@ import java.util.logging.Logger;
 public class Favor extends Stat {
     private static final Logger logger = Logger.getLogger(Favor.class.getName());
     private static final float minimumFavor = 0.0001f;
-    public Favor(float ratio) {
+
+    private Favor(float ratio) {
         super(Favor.class.getSimpleName(), ratio);
     }
 
@@ -37,7 +38,7 @@ public class Favor extends Stat {
         return Math.max(0, (int)(creature.getFavor() * ratio));
     }
 
-    static {
-        Stat.stats.put(Favor.class.getSimpleName(), Favor::new);
+    public static void register() {
+        Stat.add(Favor.class.getSimpleName(), Favor::new);
     }
 }

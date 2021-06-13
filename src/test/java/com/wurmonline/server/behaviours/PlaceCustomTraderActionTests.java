@@ -6,6 +6,7 @@ import com.wurmonline.server.items.ItemList;
 import com.wurmonline.server.players.Player;
 import com.wurmonline.server.questions.PlaceCurrencyTraderQuestion;
 import com.wurmonline.server.questions.PlaceCustomTraderQuestion;
+import com.wurmonline.server.questions.PlaceStatTraderQuestion;
 import com.wurmonline.server.zones.Zones;
 import mod.wurmunlimited.Assert;
 import mod.wurmunlimited.npcs.customtrader.CustomTraderTest;
@@ -104,6 +105,24 @@ public class PlaceCustomTraderActionTests extends CustomTraderTest {
         assertTrue(menu.action(action, gm, wand, 0, 0, true,  0, 0, getActionId(2), 0f));
         assertEquals(1, factory.getCommunicator(gm).getBml().length);
         new PlaceCurrencyTraderQuestion(gm, Objects.requireNonNull(Zones.getTileOrNull(0, 0, true)), 0).sendQuestion();
+
+        // To account for random gender.
+        String[] bml = factory.getCommunicator(gm).getBml();
+        List<String> fixed = new ArrayList<>();
+        for (String b : bml) {
+            fixed.add(b.replace(";selected=\"true\"", ""));
+        }
+        ReflectionUtil.setPrivateField(factory.getCommunicator(gm), FakeCommunicator.class.getDeclaredField("bml"), fixed);
+
+        assertThat(gm, Assert.bmlEqual());
+    }
+
+    @Test
+    void testQuestionReceivedStatTrader() throws NoSuchFieldException, IllegalAccessException {
+        actionString = "Stat Trader";
+        assertTrue(menu.action(action, gm, wand, 0, 0, true,  0, 0, getActionId(3), 0f));
+        assertEquals(1, factory.getCommunicator(gm).getBml().length);
+        new PlaceStatTraderQuestion(gm, Objects.requireNonNull(Zones.getTileOrNull(0, 0, true)), 0).sendQuestion();
 
         // To account for random gender.
         String[] bml = factory.getCommunicator(gm).getBml();

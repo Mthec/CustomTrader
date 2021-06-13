@@ -18,6 +18,9 @@ import com.wurmonline.server.zones.VolaTile;
 import com.wurmonline.server.zones.Zones;
 import javassist.*;
 import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
+import mod.wurmunlimited.npcs.customtrader.stats.Favor;
+import mod.wurmunlimited.npcs.customtrader.stats.Health;
+import mod.wurmunlimited.npcs.customtrader.stats.Karma;
 import org.gotti.wurmunlimited.modloader.ReflectionUtil;
 import org.gotti.wurmunlimited.modloader.classhooks.HookManager;
 import org.gotti.wurmunlimited.modloader.interfaces.*;
@@ -40,6 +43,12 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
     private static boolean requirePriestForFavor = true;
     private boolean preventDecay = true;
     private final CommandWaitTimer restockTimer = new CommandWaitTimer(TimeConstants.MINUTE_MILLIS);
+
+    static {
+        Karma.register();
+        Health.register();
+        Favor.register();
+    }
 
     public static boolean isOtherTrader(Creature maybeTrader) {
         return CurrencyTraderTemplate.isCurrencyTrader(maybeTrader) || StatTraderTemplate.is(maybeTrader);
