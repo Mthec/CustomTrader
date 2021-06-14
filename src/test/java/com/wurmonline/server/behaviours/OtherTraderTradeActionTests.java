@@ -10,6 +10,7 @@ import com.wurmonline.server.items.StatTraderTrade;
 import com.wurmonline.server.players.Player;
 import mod.wurmunlimited.npcs.customtrader.CustomTraderTest;
 import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
+import mod.wurmunlimited.npcs.customtrader.stats.FavorPriest;
 import org.gotti.wurmunlimited.modloader.ReflectionUtil;
 import org.gotti.wurmunlimited.modsupport.actions.ActionEntryBuilder;
 import org.junit.jupiter.api.BeforeEach;
@@ -135,6 +136,15 @@ public class OtherTraderTradeActionTests extends CustomTraderTest {
     @Test
     void testActionIncorrectActionId() {
         assertTrue(action.action(act, player, currencyTrader, (short)(action.getActionId() + 1), 0f));
+        assertFalse(factory.getCommunicator(player).sentStartTrading);
+    }
+
+    @Test
+    void testActionStatTraderFavorPriestNotPriest() {
+        assert !player.isPriest();
+        CustomTraderDatabase.setStatFor(statTrader, create(FavorPriest.class.getSimpleName(), 1.0f));
+        createHandlerFor(statTrader);
+        assertTrue(action.action(act, player, statTrader, action.getActionId(), 0f));
         assertFalse(factory.getCommunicator(player).sentStartTrading);
     }
 }

@@ -1,7 +1,6 @@
 package mod.wurmunlimited.npcs.customtrader.stats;
 
 import com.wurmonline.server.players.Player;
-import mod.wurmunlimited.npcs.customtrader.CustomTraderObjectsFactory;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -24,24 +23,28 @@ public class FavorTests extends StatTests {
         }
     }
 
-    @Override
-    protected int getHas(Player player) {
-        return (int)player.getFavor();
+    @Test
+    void testTakeBigRatioStat() {
+        Stat stat = getStat(2.0f);
+
+        giveStat(player, 6);
+        assert stat.creatureHas(player) == 12;
+
+        assertTrue(stat.takeStatFrom(player, 3));
+        assertEquals(9, stat.creatureHas(player));
+
+        postTest(player);
     }
 
-    @Override
     @Test
     void testTakeMinimumRatioStat() {
-        Player player = CustomTraderObjectsFactory.getCurrent().createNewPlayer();
-        Stat stat = getStat(0.0001f);
+        Stat stat = getStat(1000f);
 
-        try {
-            player.setFavor(0.0002f);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        giveStat(player, 1);
 
         assertTrue(stat.takeStatFrom(player, 1));
-        assertEquals(0.0001f, player.getFavor());
+        assertEquals(999, stat.creatureHas(player));
+
+        postTest(player);
     }
 }

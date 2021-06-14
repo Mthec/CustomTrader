@@ -3,10 +3,12 @@ package com.wurmonline.server.creatures;
 import com.wurmonline.server.items.Item;
 import com.wurmonline.server.items.OtherTraderTrade;
 import com.wurmonline.server.items.StatTraderTrade;
+import com.wurmonline.server.items.TradingWindow;
 import com.wurmonline.server.players.Player;
 import mod.wurmunlimited.npcs.customtrader.CustomTraderMod;
 import mod.wurmunlimited.npcs.customtrader.CustomTraderTest;
 import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
+import mod.wurmunlimited.npcs.customtrader.stats.Favor;
 import mod.wurmunlimited.npcs.customtrader.stats.FavorPriest;
 import mod.wurmunlimited.npcs.customtrader.stats.Karma;
 import mod.wurmunlimited.npcs.customtrader.stats.Stat;
@@ -60,9 +62,35 @@ public class StatTraderTradeHandlerTests extends CustomTraderTest {
     }
 
     @Test
+    void testMessageInCoin() {
+        factory.getCommunicator(player).clear();
+        player.setKarma(1234567);
+        handler = new StatTraderTradeHandler(trader, trade);
+        assertThat(player, receivedMessageContaining("1234567"));
+        assertThat(player, receivedMessageContaining("1g, 23s, 45c, 67i"));
+    }
+
+    @Test
+    void testMessageIfZero() {
+        factory.getCommunicator(player).clear();
+        player.setKarma(0);
+        handler = new StatTraderTradeHandler(trader, trade);
+        assertThat(player, receivedMessageContaining("you have 0"));
+        assertThat(player, didNotReceiveMessageContaining("equivalent"));
+    }
+
+    @Test
     void testAllItemsAddedToTradeWindow() {
         assert trader.getInventory().getItems().size() == 5;
         assertEquals(5, trade.getTradingWindow(1).getAllItems().length);
+    }
+
+    @Test
+    void testGetPriceFor() {
+        TradingWindow window = trade.getTradingWindow(1);
+        Item item = window.getItems()[0];
+
+        assertEquals(1, handler.getTraderSellPriceForItem(item, window));
     }
 
     // Balance
@@ -185,9 +213,7 @@ public class StatTraderTradeHandlerTests extends CustomTraderTest {
 
         handler = new StatTraderTradeHandler(trader, trade);
         assertThat(player, receivedMessageContaining("only offer my services to priests"));
-        assertFalse(player.isTrading());
-        assertNull(player.getTrade());
-        assertNull(trader.getTrade());
+        assertTrue(handler.aborted);
     }
 
     @Test
@@ -198,8 +224,18 @@ public class StatTraderTradeHandlerTests extends CustomTraderTest {
 
         handler = new StatTraderTradeHandler(trader, trade);
         assertThat(player, receivedMessageContaining("I will trade"));
-        assertTrue(player.isTrading());
-        assertNotNull(player.getTrade());
-        assertNotNull(trader.getTrade());
+        assertFalse(handler.aborted);
+    }
+
+    @Test
+    void testNonPriestsNotBlockedIfFavor() throws NoSuchFieldException, IllegalAccessException, IOException {
+        assert !player.isPriest();
+        player.setFavor(2);
+        CustomTraderDatabase.setStatFor(trader, create(Favor.class.getSimpleName(), 1.0f));
+
+        handler = new StatTraderTradeHandler(trader, trade);
+        assertThat(player, didNotReceiveMessageContaining("only offer my services to priests"));
+        assertThat(player, receivedMessageContaining("I will trade"));
+        assertFalse(handler.aborted);
     }
 }

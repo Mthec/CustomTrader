@@ -5,6 +5,8 @@ import com.wurmonline.server.creatures.StatTraderTradeHandler;
 import com.wurmonline.server.players.Player;
 import mod.wurmunlimited.npcs.customtrader.CustomTraderTest;
 import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
+import mod.wurmunlimited.npcs.customtrader.stats.Favor;
+import mod.wurmunlimited.npcs.customtrader.stats.Health;
 import mod.wurmunlimited.npcs.customtrader.stats.Karma;
 import mod.wurmunlimited.npcs.customtrader.stats.Stat;
 import mod.wurmunlimited.npcs.customtrader.stock.Enchantment;
@@ -12,6 +14,7 @@ import org.gotti.wurmunlimited.modloader.ReflectionUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -20,7 +23,7 @@ public class StatTraderTradingWindowTests extends CustomTraderTest {
     private Creature trader;
     private Player player;
     private int currency;
-    private StatTraderTrade trade;
+    private StatTraderTrade trade = null;
 
     @BeforeEach
     protected void setUp() throws Throwable {
@@ -32,12 +35,23 @@ public class StatTraderTradingWindowTests extends CustomTraderTest {
         assert trader.getShop() != null;
         CustomTraderDatabase.addStockItemTo(trader, 5, 5, 5, (byte)0, (byte)0, 5, new Enchantment[0], (byte)0, 5, 5, 0);
         CustomTraderDatabase.restock(trader);
-        trade = new StatTraderTrade(player, trader, stat);
-        player.setTrade(trade);
-        trader.setTrade(trade);
-        StatTraderTradeHandler handler = new StatTraderTradeHandler(trader, trade);
-        ReflectionUtil.setPrivateField(trader, Creature.class.getDeclaredField("tradeHandler"), handler);
-        handler.addItemsToTrade();
+        createNewTrade(stat);
+    }
+
+    private void createNewTrade(Stat stat) {
+        try {
+            if (trade != null) {
+                trade.end(trader, true);
+            }
+            trade = new StatTraderTrade(player, trader, stat);
+            player.setTrade(trade);
+            trader.setTrade(trade);
+            StatTraderTradeHandler handler = new StatTraderTradeHandler(trader, trade);
+            ReflectionUtil.setPrivateField(trader, Creature.class.getDeclaredField("tradeHandler"), handler);
+            handler.addItemsToTrade();
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Test
@@ -67,6 +81,52 @@ public class StatTraderTradingWindowTests extends CustomTraderTest {
 
         assertEquals(25, factory.getShop(trader).getMoneyEarnedLife());
         assertEquals(0, player.getKarma());
+        assertEquals(5, player.getInventory().getItemCount());
+        assertEquals(0, trader.getInventory().getItemCount());
+    }
+
+    @Test
+    void testPlayerChargedCorrectlyFavor() throws IOException {
+        player.setFavor(25);
+        Stat stat = create(Favor.class.getSimpleName(), 1.0f);
+        CustomTraderDatabase.setStatFor(trader, stat);
+        createNewTrade(stat);
+        TradingWindow sourceWindow = trade.getTradingWindow(1);
+        TradingWindow window = trade.getTradingWindow(3);
+        Arrays.asList(sourceWindow.getAllItems()).forEach(i -> {
+            sourceWindow.removeItem(i);
+            window.addItem(i);
+        });
+        assert player.getInventory().getItemCount() == 0;
+        assert trader.getInventory().getItemCount() == 5;
+
+        window.swapOwners();
+
+        assertEquals(25, factory.getShop(trader).getMoneyEarnedLife());
+        assertEquals(0, player.getFavor());
+        assertEquals(5, player.getInventory().getItemCount());
+        assertEquals(0, trader.getInventory().getItemCount());
+    }
+
+    @Test
+    void testPlayerChargedCorrectlyHealth() {
+        player.getStatus().damage = 65534 - 25;
+        Stat stat = create(Health.class.getSimpleName(), 1.0f);
+        CustomTraderDatabase.setStatFor(trader, stat);
+        createNewTrade(stat);
+        TradingWindow sourceWindow = trade.getTradingWindow(1);
+        TradingWindow window = trade.getTradingWindow(3);
+        Arrays.asList(sourceWindow.getAllItems()).forEach(i -> {
+            sourceWindow.removeItem(i);
+            window.addItem(i);
+        });
+        assert player.getInventory().getItemCount() == 0;
+        assert trader.getInventory().getItemCount() == 5;
+
+        window.swapOwners();
+
+        assertEquals(25, factory.getShop(trader).getMoneyEarnedLife());
+        assertEquals(65534, player.getStatus().damage);
         assertEquals(5, player.getInventory().getItemCount());
         assertEquals(0, trader.getInventory().getItemCount());
     }

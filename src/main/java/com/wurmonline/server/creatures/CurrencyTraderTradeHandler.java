@@ -18,25 +18,33 @@ public class CurrencyTraderTradeHandler extends TradeHandler {
     private final ArrayList<StockItem> prices = new ArrayList<>();
     private boolean balanced = false;
     private boolean waiting = false;
+    public final boolean aborted;
 
     public CurrencyTraderTradeHandler(Creature trader, Trade trade) {
+        ItemTemplate tempCurrency;
+        boolean tempAborted;
         this.trader = trader;
         this.trade = trade;
         int curr = CustomTraderDatabase.getCurrencyFor(trader);
         ItemTemplate template;
         try {
             template = ItemTemplateFactory.getInstance().getTemplate(curr);
+            tempCurrency = template;
+
+            for (StockInfo info : CustomTraderDatabase.getStockFor(trader)) {
+                prices.add(info.item);
+            }
+
+            trade.creatureOne.getCommunicator().sendSafeServerMessage(trader.getName() + " says 'I will trade each of my goods in exchange for " + template.getPlural() + ".'");
+            tempAborted = false;
         } catch (NoSuchTemplateException e) {
             e.printStackTrace();
-            template = null;
+            tempCurrency = null;
+            tempAborted = true;
+            trade.creatureOne.getCommunicator().sendAlertServerMessage(trader.getName() + " looks confused and ends the trade.");
         }
-        currency = template;
-
-        for (StockInfo info : CustomTraderDatabase.getStockFor(trader)) {
-            prices.add(info.item);
-        }
-
-        trade.creatureOne.getCommunicator().sendSafeServerMessage(trader.getName() + " says 'I will trade each of my goods in exchange for " + template.getPlural() + ".'");
+        currency = tempCurrency;
+        aborted = tempAborted;
     }
 
     @Override

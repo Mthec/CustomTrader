@@ -13,6 +13,8 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.stream.Collectors;
 
+import static com.wurmonline.server.questions.StatTraderManagementQuestion.STAT_DESCRIPTION;
+
 public class PlaceStatTraderQuestion extends PlaceOrManageTraderQuestion {
     private static final Random r = new Random();
     private final VolaTile tile;
@@ -37,7 +39,7 @@ public class PlaceStatTraderQuestion extends PlaceOrManageTraderQuestion {
             newStat = stats.get(newStatIndex);
         } catch (ArrayIndexOutOfBoundsException e) {
             newStat = stats.get(0);
-            responder.getCommunicator().sendSafeServerMessage("The trader didn't understand so selected " + newStat + ".");
+            responder.getCommunicator().sendSafeServerMessage("The trader didn't understand so selected " + newStat.label() + ".");
         }
 
         float ratio;
@@ -84,7 +86,7 @@ public class PlaceStatTraderQuestion extends PlaceOrManageTraderQuestion {
                              .text("Stat:")
                              .dropdown("stat", stats.stream().map(StatFactory::label).collect(Collectors.joining(",")), 0)
                              .newLine()
-                             .text("How many of stat is worth 1i.  e.g. using karma, to buy a 5i item with a ratio of 0.5 it would only take 5 karma.")
+                             .text(STAT_DESCRIPTION)
                              .harray(b -> b.label("Ratio:").entry("ratio", "1.0", 6))
                              .newLine();
 

@@ -12,9 +12,4 @@ public class KarmaTests extends StatTests {
     protected void giveStat(Player player, int amount) {
         player.setKarma(amount);
     }
-
-    @Override
-    protected int getHas(Player player) {
-        return player.getKarma();
-    }
 }

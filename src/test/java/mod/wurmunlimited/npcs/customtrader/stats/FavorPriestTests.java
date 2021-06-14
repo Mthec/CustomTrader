@@ -24,31 +24,6 @@ public class FavorPriestTests extends StatTests {
         }
     }
 
-    @Override
-    protected int getHas(Player player) {
-        if (!player.isPriest()) {
-            throw new RuntimeException("Player was not a priest.");
-        }
-        return (int)player.getFavor();
-    }
-
-    @Override
-    @Test
-    void testTakeMinimumRatioStat() {
-        Player player = CustomTraderObjectsFactory.getCurrent().createNewPlayer();
-        Stat stat = getStat(0.0001f);
-
-        try {
-            player.setPriest(true);
-            player.setFavor(0.0002f);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        assertTrue(stat.takeStatFrom(player, 1));
-        assertEquals(0.0001f, player.getFavor());
-    }
-
     @Test
     void testIsNotPriest() {
         Player player = CustomTraderObjectsFactory.getCurrent().createNewPlayer();
@@ -63,5 +38,30 @@ public class FavorPriestTests extends StatTests {
 
         assertFalse(stat.takeStatFrom(player, 1));
         assertEquals(10, player.getFavor());
+    }
+
+    @Test
+    void testTakeBigRatioStat() {
+        Stat stat = getStat(2.0f);
+
+        giveStat(player, 6);
+        assert stat.creatureHas(player) == 12;
+
+        assertTrue(stat.takeStatFrom(player, 3));
+        assertEquals(9, stat.creatureHas(player));
+
+        postTest(player);
+    }
+
+    @Test
+    void testTakeMinimumRatioStat() {
+        Stat stat = getStat(1000f);
+
+        giveStat(player, 1);
+
+        assertTrue(stat.takeStatFrom(player, 1));
+        assertEquals(999, stat.creatureHas(player));
+
+        postTest(player);
     }
 }

@@ -33,11 +33,11 @@ public class Favor extends Stat {
 
     @Override
     public boolean takeStatFrom(Creature creature, int amount) {
-        float actualAmount = Math.max(minimumFavor, amount * ratio);
+        float actualAmount = Math.max(minimumFavor, amount / ratio);
         float newFavor = creature.getFavor() - actualAmount;
 
         if (newFavor < 0) {
-            logger.warning("Could not remove " + actualAmount + " favor from " + creature.getName() + ", please report.");
+            logger.warning("Could not remove " + actualAmount + " favor from " + creature.getName() + " as it would be too low, please report.");
             return false;
         }
 

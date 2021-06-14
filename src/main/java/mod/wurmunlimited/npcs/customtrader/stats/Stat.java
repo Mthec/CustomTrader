@@ -25,6 +25,10 @@ public abstract class Stat {
 
     public abstract StatFactory getFactory();
 
+    public String label() {
+        return getFactory().label();
+    }
+
     public boolean useBlocked(Creature creature, Creature trader) {
         return false;
     }

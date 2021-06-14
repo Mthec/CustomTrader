@@ -14,7 +14,6 @@ import com.wurmonline.server.villages.Village;
 import mod.wurmunlimited.npcs.customtrader.CurrencyTraderTemplate;
 import mod.wurmunlimited.npcs.customtrader.CustomTraderMod;
 import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
-import mod.wurmunlimited.npcs.customtrader.stats.Favor;
 import mod.wurmunlimited.npcs.customtrader.stats.Stat;
 import org.gotti.wurmunlimited.modsupport.actions.*;
 
@@ -118,8 +117,7 @@ public class OtherTraderTradeAction implements ModAction, ActionPerformer, Behav
                     if (stat == null) {
                         performer.getCommunicator().sendNormalServerMessage(target.getName() + " mind wanders and they forget what they were doing.");
                         return true;
-                    } else if (stat.name.equals(Favor.class.getSimpleName())) {
-                        performer.getCommunicator().sendSafeServerMessage(target.getName() + " says 'I will only trade with priests.'.");
+                    } else if (stat.useBlocked(performer, target)) {
                         return true;
                     }
                     trade = new StatTraderTrade(performer, target, stat);
@@ -130,10 +128,20 @@ public class OtherTraderTradeAction implements ModAction, ActionPerformer, Behav
                 performer.getCommunicator().sendStartTrading(target);
                 if (isCurrencyTrader) {
                     //noinspection ConstantConditions
-                    ((CurrencyTraderTradeHandler)target.getTradeHandler()).addItemsToTrade();
+                    CurrencyTraderTradeHandler handler = (CurrencyTraderTradeHandler)target.getTradeHandler();
+                    if (handler.aborted) {
+                        trade.end(target, true);
+                    } else {
+                        handler.addItemsToTrade();
+                    }
                 } else {
                     //noinspection ConstantConditions
-                    ((StatTraderTradeHandler)target.getTradeHandler()).addItemsToTrade();
+                    StatTraderTradeHandler handler = (StatTraderTradeHandler)target.getTradeHandler();
+                    if (handler.aborted) {
+                        trade.end(target, true);
+                    } else {
+                        handler.addItemsToTrade();
+                    }
                 }
                 return true;
             }

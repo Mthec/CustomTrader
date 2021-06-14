@@ -1,5 +1,6 @@
 package com.wurmonline.server.creatures;
 
+import com.wurmonline.server.economy.Change;
 import com.wurmonline.server.items.Item;
 import com.wurmonline.server.items.Trade;
 import com.wurmonline.server.items.TradingWindow;
@@ -17,6 +18,7 @@ public class StatTraderTradeHandler extends TradeHandler {
     private final Stat stat;
     private boolean balanced = false;
     private boolean waiting = false;
+    public final boolean aborted;
 
     public StatTraderTradeHandler(Creature trader, Trade trade) {
         super(trader, trade);
@@ -26,12 +28,16 @@ public class StatTraderTradeHandler extends TradeHandler {
 
         if (stat == null) {
             trade.creatureOne.getCommunicator().sendAlertServerMessage(trader.getName() + " looks confused and ends the trade.");
-            trade.end(trader, true);
+            logger.warning("Stat was null when initiating trader handler.");
+            aborted = true;
         } else if (stat.useBlocked(trade.creatureOne, trader)) {
-            trade.end(trader, true);
+            aborted = true;
         } else {
-            trade.creatureOne.getCommunicator().sendSafeServerMessage(trader.getName() + " says 'I will trade my goods in exchange for " + stat.name + ", " +
-                                                                              "I see you have " + stat.creatureHas(trade.creatureOne) + ".'");
+            int has = stat.creatureHas(trade.creatureOne);
+            trade.creatureOne.getCommunicator().sendSafeServerMessage(trader.getName() + " says 'I will trade my goods in exchange for " + stat.label() + ", " +
+                                                                              "I see you have " + has +
+                                                                              (has > 0 ? ", the equivalent of " + new Change(has).getChangeShortString() : "") + ".'");
+            aborted = false;
         }
     }
 
@@ -57,7 +63,7 @@ public class StatTraderTradeHandler extends TradeHandler {
 
     @Override
     public int getTraderSellPriceForItem(Item item, TradingWindow window) {
-        return (int)(item.getPrice() * stat.ratio);
+        return item.getPrice();
     }
 
     @Override

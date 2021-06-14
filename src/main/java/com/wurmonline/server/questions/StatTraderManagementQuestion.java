@@ -12,6 +12,7 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 
 public class StatTraderManagementQuestion extends PlaceOrManageTraderQuestion {
+    static final String STAT_DESCRIPTION = "How much one unit of stat is worth 1i.  e.g. using karma, to buy a 5i item with a ratio of 0.5 it would take 10 karma.";
     private final Creature trader;
     private final String currentTag;
     private final List<StatFactory> stats = Stat.getAll();
@@ -38,7 +39,7 @@ public class StatTraderManagementQuestion extends PlaceOrManageTraderQuestion {
                 newStat = stats.get(newStatIndex);
             } catch (ArrayIndexOutOfBoundsException e) {
                 newStat = currentStat.getFactory();
-                responder.getCommunicator().sendSafeServerMessage("The trader didn't understand so selected " + currentStat.name + ".");
+                responder.getCommunicator().sendSafeServerMessage("The trader didn't understand so selected " + currentStat.label() + ".");
             }
 
             float ratio;
@@ -65,7 +66,7 @@ public class StatTraderManagementQuestion extends PlaceOrManageTraderQuestion {
                 return;
             } else if (stat != currentStat) {
                 CustomTraderDatabase.setStatFor(trader, stat);
-                responder.getCommunicator().sendNormalServerMessage("The trader will now collect " + stat.name + " at a ratio of " + stat.ratio + ":1.");
+                responder.getCommunicator().sendNormalServerMessage("The trader will now collect " + stat.label() + " at a ratio of " + stat.ratio + ":1.");
             }
             
             checkSaveTag(trader, currentTag);
@@ -85,7 +86,7 @@ public class StatTraderManagementQuestion extends PlaceOrManageTraderQuestion {
                      .text("Stat:")
                      .dropdown("stat", stats.stream().map(StatFactory::label).collect(Collectors.joining(",")), stats.indexOf(currentStat.getFactory()))
                      .newLine()
-                     .text("How many of stat is worth 1i.  e.g. using karma, to buy a 10i item with a ratio of 0.5 it would only take 5 karma.")
+                     .text(STAT_DESCRIPTION)
                      .harray(b -> b.label("Ratio:").entry("ratio", Float.toString(currentStat.ratio), 6))
                      .newLine();
 

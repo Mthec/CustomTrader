@@ -31,7 +31,7 @@ public class Karma extends Stat {
 
     @Override
     public boolean takeStatFrom(Creature creature, int amount) {
-        int actualAmount = Math.max(1, (int)(amount * ratio));
+        int actualAmount = Math.max(1, (int)(amount / ratio));
         int newKarma = creature.getKarma() - actualAmount;
 
         if (newKarma < 0) {
