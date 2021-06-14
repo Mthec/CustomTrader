@@ -2,6 +2,7 @@ package mod.wurmunlimited.npcs.customtrader.stats;
 
 import com.wurmonline.server.bodys.Wound;
 import com.wurmonline.server.creatures.Creature;
+import com.wurmonline.server.sounds.SoundPlayer;
 
 import java.util.logging.Logger;
 
@@ -58,6 +59,9 @@ public class Health extends Stat {
         }
 
         creature.getCurrentTile().broadCast("The trader drains life-force from " + creature.getName() + ".");
+        if (!creature.hasNoServerSound()) {
+            SoundPlayer.playSound(creature.getDeathSound(), creature, 1.6f);
+        }
         return true;
     }
 
