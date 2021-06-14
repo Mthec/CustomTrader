@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -32,6 +33,22 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
         Creature trader = factory.createNewCustomTrader();
 
         assertThat(trader, isInDb());
+    }
+
+    @Test
+    void testDelete() {
+        List<Creature> traders = new ArrayList<>();
+        traders.add(factory.createNewCustomTrader());
+        traders.add(factory.createNewCurrencyTrader());
+        traders.add(factory.createNewStatTrader());
+
+        for (Creature trader : traders) {
+            assertThat(trader, isInDb());
+
+            CustomTraderDatabase.deleteTrader(trader);
+
+            assertThat(trader, isNotInDb());
+        }
     }
 
     // Tags

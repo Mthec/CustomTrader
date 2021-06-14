@@ -14,6 +14,7 @@ import com.wurmonline.server.items.NoSuchTemplateException;
 import com.wurmonline.server.spells.SpellEffect;
 import com.wurmonline.shared.exceptions.WurmServerException;
 import mod.wurmunlimited.npcs.customtrader.CurrencyTraderTemplate;
+import mod.wurmunlimited.npcs.customtrader.CustomTraderTemplate;
 import mod.wurmunlimited.npcs.customtrader.StatTraderTemplate;
 import mod.wurmunlimited.npcs.customtrader.stats.Stat;
 import mod.wurmunlimited.npcs.customtrader.stats.StatFactory;
@@ -213,6 +214,34 @@ public class CustomTraderDatabase {
 
             ps.execute();
         });
+    }
+
+    public static void deleteTrader(Creature trader) {
+        String table;
+        if (CustomTraderTemplate.isCustomTrader(trader)) {
+            table = "traders";
+        } else if (CurrencyTraderTemplate.isCurrencyTrader(trader)) {
+            table = "currency_traders";
+        } else if (StatTraderTemplate.is(trader)) {
+            table = "stat_traders";
+        } else {
+            return;
+        }
+
+        try {
+            execute(db -> {
+                //noinspection SqlResolve
+                PreparedStatement ps = db.prepareStatement("DELETE FROM " + table + " WHERE id=?;");
+                ps.setLong(1, trader.getWurmId());
+
+                ps.execute();
+            });
+        } catch (SQLException e) {
+            logger.warning("Error when deleting trader from " + table + ".");
+            e.printStackTrace();
+        }
+
+        tags.remove(trader);
     }
 
     private static void updateLastRestocked(Creature trader, StockItem stockItem) {

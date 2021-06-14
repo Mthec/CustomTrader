@@ -1,9 +1,6 @@
 package mod.wurmunlimited.npcs.customtrader;
 
 import com.wurmonline.server.creatures.Creature;
-import com.wurmonline.server.items.ItemTemplate;
-import com.wurmonline.server.items.ItemTemplateFactory;
-import com.wurmonline.server.items.NoSuchTemplateException;
 import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
 import org.gotti.wurmunlimited.modloader.ReflectionUtil;
 import org.hamcrest.Description;
@@ -24,26 +21,43 @@ public class CustomTraderDatabaseAssertions {
     }
 
     public static class IsInDb extends TypeSafeMatcher<Creature> {
+        private final int required;
         private Creature trader;
         private int answer;
+
+        IsInDb(int required) {
+            this.required = required;
+        }
 
         protected boolean matchesSafely(Creature trader) {
             this.trader = trader;
 
+            String table;
+            if (CustomTraderTemplate.isCustomTrader(trader)) {
+                table = "traders";
+            } else if (CurrencyTraderTemplate.isCurrencyTrader(trader)) {
+                table = "currency_traders";
+            } else if (StatTraderTemplate.is(trader)) {
+                table = "stat_traders";
+            } else {
+                throw new RuntimeException("A non-trader was passed.");
+            }
+
             execute(db -> {
-                PreparedStatement ps = db.prepareStatement("SELECT COUNT(*) FROM traders WHERE id=?");
+                //noinspection SqlResolve
+                PreparedStatement ps = db.prepareStatement("SELECT COUNT(*) FROM " + table + " WHERE id=?");
                 ps.setLong(1, trader.getWurmId());
                 ResultSet rs = ps.executeQuery();
 
                 answer = rs.getInt(1);
             });
 
-            return answer == 1;
+            return answer == required;
         }
 
         @Override
         public void describeTo(Description description) {
-            description.appendText(" trader with id " + trader.getWurmId());
+            description.appendText(" " + (required == 0 ? "no" : "a") + " trader with id " + trader.getWurmId());
         }
 
         @Override
@@ -53,12 +67,16 @@ public class CustomTraderDatabaseAssertions {
     }
 
     public static Matcher<Creature> isInDb() {
-        return new IsInDb();
+        return new IsInDb(1);
+    }
+
+    public static Matcher<Creature> isNotInDb() {
+        return new IsInDb(0);
     }
 
     public static class HasTag extends TypeSafeMatcher<Creature> {
         private Creature trader;
-        private String tag;
+        private final String tag;
         private String answer = "?";
 
         HasTag(String tag) {
@@ -96,7 +114,7 @@ public class CustomTraderDatabaseAssertions {
 
     public static class DoesNotHaveTag extends TypeSafeMatcher<Creature> {
         private Creature trader;
-        private String tag;
+        private final String tag;
         private String answer = "?";
 
         DoesNotHaveTag(String tag) {

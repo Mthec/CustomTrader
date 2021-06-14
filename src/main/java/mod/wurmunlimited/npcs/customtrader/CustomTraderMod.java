@@ -122,6 +122,11 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
                 "()Lcom/wurmonline/server/creatures/TradeHandler;",
                 () -> this::getTradeHandler);
 
+        manager.registerHook("com.wurmonline.server.creatures.Creature",
+                "destroy",
+                "()V",
+                () -> this::destroy);
+
         manager.registerHook("com.wurmonline.server.questions.QuestionParser",
                 "parseCreatureCreationQuestion",
                 "(Lcom/wurmonline/server/questions/CreatureCreationQuestion;)V",
@@ -249,6 +254,15 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
         }
 
         return handler;
+    }
+
+    Object destroy(Object o, Method method, Object[] args) throws InvocationTargetException, IllegalAccessException {
+        Creature creature = (Creature)o;
+        if (isSpecialTrader(creature)) {
+            CustomTraderDatabase.deleteTrader(creature);
+        }
+
+        return method.invoke(o, args);
     }
 
     Object creatureCreation(Object o, Method method, Object[] args) throws InvocationTargetException, IllegalAccessException, NoSuchFieldException {
