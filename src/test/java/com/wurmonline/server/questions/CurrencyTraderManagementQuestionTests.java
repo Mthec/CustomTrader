@@ -32,7 +32,6 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
         super.setUp();
         gm = factory.createNewPlayer();
         trader = factory.createNewCurrencyTrader(ItemList.acorn, 1);
-        new CustomTraderMod();
     }
 
     @Test
@@ -241,7 +240,7 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
     }
 
     @Test
-    void testAddsFaceIfModelSetHuman() throws SQLException {
+    void testAsksForFaceIfModelSetHuman() throws SQLException {
         String oldModel = "old.model";
         CustomTraderMod.mod.modelSetter.setModelFor(trader, oldModel);
         assert CustomTraderMod.mod.faceSetter.getFaceFor(trader) == null;
@@ -251,7 +250,7 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
         new CurrencyTraderManagementQuestion(gm, trader).answer(properties);
 
         assertEquals(HUMAN_MODEL_NAME, CustomTraderMod.mod.modelSetter.getModelFor(trader));
-        assertNotNull(CustomTraderMod.mod.faceSetter.getFaceFor(trader));
+        assertNotNull(factory.getCommunicator(gm).sendCustomizeFace);
     }
 
     @Test

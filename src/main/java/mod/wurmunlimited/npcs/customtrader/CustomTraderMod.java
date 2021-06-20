@@ -46,8 +46,8 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
     public static final int maxNameLength = 20;
     public static CustomTraderMod mod;
     public static String namePrefix = "Trader";
-    public final FaceSetter faceSetter = new FaceSetter(this::isSpecialTrader, dbName);
-    public final ModelSetter modelSetter = new ModelSetter(this::isSpecialTrader, dbName);
+    public FaceSetter faceSetter;
+    public ModelSetter modelSetter;
     private boolean preventDecay = true;
     private final CommandWaitTimer restockTimer = new CommandWaitTimer(TimeConstants.MINUTE_MILLIS);
 
@@ -143,17 +143,21 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
                 "(Lcom/wurmonline/server/creatures/Creature;Z)Lcom/wurmonline/server/economy/Shop;",
                 () -> this::getShop);
 
+
+        FaceSetter.init(manager);
+        ModelSetter.init(manager);
+        DestroyHandler.addListener(creature -> CustomTraderDatabase.deleteTrader((Creature)creature));
         ModCreatures.init();
         ModCreatures.addCreature(new CustomTraderTemplate());
         ModCreatures.addCreature(new CurrencyTraderTemplate());
         ModCreatures.addCreature(new StatTraderTemplate());
-        faceSetter.init();
-        modelSetter.init();
-        DestroyHandler.addListener(this::isSpecialTrader, CustomTraderDatabase::deleteTrader);
     }
 
     @Override
     public void onServerStarted() {
+        faceSetter = new FaceSetter(this::isSpecialTrader, dbName);
+        modelSetter = new ModelSetter(this::isSpecialTrader, dbName);
+
         ModActions.registerAction(new OtherTraderTradeAction());
         ModActions.registerAction(new ManageCustomTraderAction());
         new PlaceCustomTraderAction();
@@ -302,7 +306,7 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
         return method.invoke(o, args);
     }
 
-    private boolean isSpecialTrader(Creature trader) {
+    boolean isSpecialTrader(Creature trader) {
         return CustomTraderTemplate.isCustomTrader(trader) || isOtherTrader(trader);
     }
 

@@ -253,7 +253,7 @@ public class CustomTraderModTests extends CustomTraderTest {
         int tileX = 250;
         int tileY = 250;
 
-        InvocationHandler handler = new CustomTraderMod()::creatureCreation;
+        InvocationHandler handler = CustomTraderMod.mod::creatureCreation;
         Method method = mock(Method.class);
         Object[] args = new Object[] { new CreatureCreationQuestion(gm, "", "", wand.getWurmId(), tileX, tileY, -1, -10) };
         ((CreatureCreationQuestion)args[0]).sendQuestion();

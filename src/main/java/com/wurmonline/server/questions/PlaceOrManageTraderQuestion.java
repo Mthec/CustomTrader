@@ -127,7 +127,7 @@ public abstract class PlaceOrManageTraderQuestion extends CustomTraderQuestionEx
         return CustomTraderMod.mod.faceSetter.withTempFace(withTempFace, tempFace);
     }
 
-    protected void checkSaveFace(Creature trader) {
+    private void checkSaveFace(Creature trader, boolean isHuman) {
         FaceSetterQuestionHelper.FaceResponse response = face.getFace(getAnswer());
         if (response.wasError && !isNew) {
             getResponder().getCommunicator().sendAlertServerMessage("Invalid face value, ignoring.");
@@ -136,11 +136,15 @@ public abstract class PlaceOrManageTraderQuestion extends CustomTraderQuestionEx
                 getResponder().getCommunicator().sendAlertServerMessage("Invalid face value, setting random.");
             }
 
-            try {
-                getResponder().getCommunicator().sendCustomizeFace(trader.getFace(), CustomTraderMod.mod.faceSetter.createIdFor(trader, (Player)getResponder()));
-            } catch (FaceSetters.TooManyTransactionsException e) {
-                logger.warning(e.getMessage());
-                getResponder().getCommunicator().sendAlertServerMessage(e.getMessage());
+            if (isHuman) {
+                try {
+                    getResponder().getCommunicator().sendCustomizeFace(response.face, CustomTraderMod.mod.faceSetter.createIdFor(trader, (Player)getResponder()));
+                } catch (FaceSetters.TooManyTransactionsException e) {
+                    logger.warning(e.getMessage());
+                    getResponder().getCommunicator().sendAlertServerMessage(e.getMessage());
+                }
+            } else {
+                CustomTraderMod.mod.faceSetter.deleteFaceFor(trader);
             }
         } else {
             try {
@@ -166,16 +170,9 @@ public abstract class PlaceOrManageTraderQuestion extends CustomTraderQuestionEx
                 logger.warning("Failed to set model (" + modelName + ") for (" + trader.getWurmId() + ").");
                 e.printStackTrace();
             }
-            try {
-                if (modelName.equals(HUMAN_MODEL_NAME)) {
-                    CustomTraderMod.mod.faceSetter.setFaceFor(trader, trader.getWurmId());
-                }
-            } catch (SQLException e) {
-                getResponder().getCommunicator().sendNormalServerMessage(trader.getName() + FACE_CHANGE_FAILURE);
-                logger.warning("Failed to set face (" + modelName + ") for (" + trader.getWurmId() + ") after model was set to human.");
-                e.printStackTrace();
-            }
         }
+
+        checkSaveFace(trader, modelName.equals(HUMAN_MODEL_NAME));
     }
 
     protected String getTag() {

@@ -37,7 +37,6 @@ public class StatTraderManagementQuestionTests extends CustomTraderTest {
         gm = factory.createNewPlayer();
         stat = create(Karma.class.getSimpleName(), 1.0f);
         trader = factory.createNewStatTrader(stat);
-        new CustomTraderMod();
     }
 
     private int indexOf(String name) {
@@ -251,7 +250,7 @@ public class StatTraderManagementQuestionTests extends CustomTraderTest {
     }
 
     @Test
-    void testAddsFaceIfModelSetHuman() throws SQLException {
+    void testAsksForFaceIfModelSetHuman() throws SQLException {
         String oldModel = "old.model";
         CustomTraderMod.mod.modelSetter.setModelFor(trader, oldModel);
         assert CustomTraderMod.mod.faceSetter.getFaceFor(trader) == null;
@@ -261,7 +260,7 @@ public class StatTraderManagementQuestionTests extends CustomTraderTest {
         new StatTraderManagementQuestion(gm, trader).answer(properties);
 
         assertEquals(HUMAN_MODEL_NAME, CustomTraderMod.mod.modelSetter.getModelFor(trader));
-        assertNotNull(CustomTraderMod.mod.faceSetter.getFaceFor(trader));
+        assertNotNull(factory.getCommunicator(gm).sendCustomizeFace);
     }
 
     @Test

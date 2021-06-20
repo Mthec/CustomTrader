@@ -35,7 +35,6 @@ public class CurrencyTraderManagementQuestion extends PlaceOrManageTraderQuestio
             sendQuestion();
         } else if (wasSelected("confirm")) {
             checkSaveName(trader);
-            checkSaveFace(trader);
             checkSaveModel(trader);
 
             int newTemplateIndex = getIntegerOrDefault("template", template.templateIndex);

@@ -24,7 +24,6 @@ public class CustomTraderManagementQuestion extends PlaceOrManageTraderQuestion 
 
         if (wasSelected("confirm")) {
             checkSaveName(trader);
-            checkSaveFace(trader);
             checkSaveModel(trader);
             checkSaveTag(trader, currentTag);
             checkStockOptions(trader);

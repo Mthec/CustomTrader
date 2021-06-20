@@ -5,6 +5,8 @@ import com.wurmonline.server.behaviours.PlaceCurrencyTraderAction;
 import com.wurmonline.server.behaviours.PlaceCustomTraderAction;
 import com.wurmonline.server.behaviours.PlaceNpcMenu;
 import com.wurmonline.server.behaviours.PlaceStatTraderAction;
+import mod.wurmunlimited.npcs.FaceSetter;
+import mod.wurmunlimited.npcs.ModelSetter;
 import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
 import mod.wurmunlimited.npcs.customtrader.stats.Stat;
 import org.gotti.wurmunlimited.modloader.ReflectionUtil;
@@ -14,6 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
+import java.util.List;
 import java.util.Objects;
 
 public abstract class CustomTraderTest {
@@ -32,6 +35,14 @@ public abstract class CustomTraderTest {
             menu = PlaceNpcMenu.register();
             init = true;
         }
+
+        ReflectionUtil.<List<FaceSetter>>getPrivateField(null, FaceSetter.class.getDeclaredField("faceSetters")).clear();
+        ReflectionUtil.<List<ModelSetter>>getPrivateField(null, ModelSetter.class.getDeclaredField("modelSetters")).clear();
+
+        CustomTraderMod mod = new CustomTraderMod();
+
+        mod.faceSetter = new FaceSetter(mod::isSpecialTrader, "customtrader.db");
+        mod.modelSetter = new ModelSetter(mod::isSpecialTrader, "customtrader.db");
     }
 
     private static void cleanUp() {

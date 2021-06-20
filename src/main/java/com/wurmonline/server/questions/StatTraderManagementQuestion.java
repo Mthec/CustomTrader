@@ -32,7 +32,6 @@ public class StatTraderManagementQuestion extends PlaceOrManageTraderQuestion {
 
         if (wasSelected("confirm")) {
             checkSaveName(trader);
-            checkSaveFace(trader);
             checkSaveModel(trader);
 
             int newStatIndex = getIntegerOrDefault("stat", -1);
