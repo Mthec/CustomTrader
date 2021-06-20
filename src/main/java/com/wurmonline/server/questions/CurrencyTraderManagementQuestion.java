@@ -14,12 +14,13 @@ public class CurrencyTraderManagementQuestion extends PlaceOrManageTraderQuestio
     private Template template;
 
     public CurrencyTraderManagementQuestion(Creature responder, Creature trader) {
-        super(responder, "Manage Currency Trader", trader.getWurmId());
+        super(responder, "Manage Currency Trader", trader);
         this.trader = trader;
         currentTag = CustomTraderDatabase.getTagFor(trader);
         EligibleTemplates.init();
         currency = CustomTraderDatabase.getCurrencyFor(trader);
         template = Template.getForTemplateId(currency);
+
     }
 
     @Override
@@ -34,6 +35,8 @@ public class CurrencyTraderManagementQuestion extends PlaceOrManageTraderQuestio
             sendQuestion();
         } else if (wasSelected("confirm")) {
             checkSaveName(trader);
+            checkSaveFace(trader);
+            checkSaveModel(trader);
 
             int newTemplateIndex = getIntegerOrDefault("template", template.templateIndex);
             if (newTemplateIndex != template.templateIndex) {

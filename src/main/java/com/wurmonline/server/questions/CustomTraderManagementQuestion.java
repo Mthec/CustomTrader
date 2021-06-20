@@ -12,7 +12,7 @@ public class CustomTraderManagementQuestion extends PlaceOrManageTraderQuestion 
     private final String currentTag;
 
     public CustomTraderManagementQuestion(Creature responder, Creature trader) {
-        super(responder, "Manage Custom Trader", trader.getWurmId());
+        super(responder, "Manage Custom Trader", trader);
         this.trader = trader;
         currentTag = CustomTraderDatabase.getTagFor(trader);
     }
@@ -24,6 +24,8 @@ public class CustomTraderManagementQuestion extends PlaceOrManageTraderQuestion 
 
         if (wasSelected("confirm")) {
             checkSaveName(trader);
+            checkSaveFace(trader);
+            checkSaveModel(trader);
             checkSaveTag(trader, currentTag);
             checkStockOptions(trader);
         } else if (wasSelected("edit")) {

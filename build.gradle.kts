@@ -15,6 +15,7 @@ dependencies {
     testImplementation(project(":WurmTestingHelper"))
     implementation(project(":BMLBuilder"))
     implementation(project(":PlaceNpc"))
+    implementation(project(":CreatureCustomiser"))
     implementation(fileTree(wurmServerFolder) { include("server.jar") })
     implementation(fileTree(wurmServerFolder) { include("modlauncher.jar", "javassist.jar") })
 //    implementation(fileTree(wurmServerFolder + "lib/") { include("WurmUnlimitedCommon-1.9.2.7.jar", "guava-18.0.jar",
@@ -41,6 +42,7 @@ tasks {
 
         from(configurations.runtimeClasspath.get().filter { it.name.startsWith("BMLBuilder") && it.name.endsWith("jar") }.map { zipTree(it) })
         from(configurations.runtimeClasspath.get().filter { it.name.startsWith("PlaceNpc") && it.name.endsWith("jar") }.map { zipTree(it) })
+        from(configurations.runtimeClasspath.get().filter { it.name.startsWith("CreatureCustomiser") && it.name.endsWith("jar") }.map { zipTree(it) })
 
         includeEmptyDirs = false
         archiveFileName.set("$shortName.jar")

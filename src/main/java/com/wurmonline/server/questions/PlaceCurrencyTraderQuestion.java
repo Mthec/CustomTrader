@@ -6,6 +6,7 @@ import mod.wurmunlimited.bml.BML;
 import mod.wurmunlimited.bml.BMLBuilder;
 import mod.wurmunlimited.npcs.customtrader.CurrencyTraderTemplate;
 
+import java.sql.SQLException;
 import java.util.Properties;
 
 public class PlaceCurrencyTraderQuestion extends PlaceOrManageTraderQuestion {
@@ -49,6 +50,11 @@ public class PlaceCurrencyTraderQuestion extends PlaceOrManageTraderQuestion {
                 try {
                     Creature trader = CurrencyTraderTemplate.createNewTrader(tile, floorLevel, name, sex, responder.getKingdomId(), template.itemTemplate.getTemplateId(), tag);
                     logger.info(responder.getName() + " created a currency trader: " + trader.getWurmId());
+                    checkSaveFace(trader);
+                    checkSaveModel(trader);
+                } catch (SQLException e) {
+                    responder.getCommunicator().sendAlertServerMessage("An error occurred in the rifts of the void. The trader was created, but their appearance was not set.");
+                    e.printStackTrace();
                 } catch (Exception e) {
                     responder.getCommunicator().sendAlertServerMessage("An error occurred in the rifts of the void. The trader was not created.");
                     e.printStackTrace();

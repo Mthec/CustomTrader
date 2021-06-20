@@ -19,7 +19,7 @@ public class StatTraderManagementQuestion extends PlaceOrManageTraderQuestion {
     private final Stat currentStat;
 
     public StatTraderManagementQuestion(Creature responder, Creature trader) {
-        super(responder, "Manage Karma Trader", trader.getWurmId());
+        super(responder, "Manage Karma Trader", trader);
         this.trader = trader;
         currentStat = CustomTraderDatabase.getStatFor(trader);
         currentTag = CustomTraderDatabase.getTagFor(trader);
@@ -32,6 +32,8 @@ public class StatTraderManagementQuestion extends PlaceOrManageTraderQuestion {
 
         if (wasSelected("confirm")) {
             checkSaveName(trader);
+            checkSaveFace(trader);
+            checkSaveModel(trader);
 
             int newStatIndex = getIntegerOrDefault("stat", -1);
             StatFactory newStat;

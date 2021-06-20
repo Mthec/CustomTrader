@@ -16,9 +16,11 @@ import mod.wurmunlimited.npcs.customtrader.stock.Enchantment;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.sql.SQLException;
 import java.util.Properties;
 
 import static mod.wurmunlimited.Assert.*;
+import static mod.wurmunlimited.npcs.ModelSetter.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -35,6 +37,7 @@ public class StatTraderManagementQuestionTests extends CustomTraderTest {
         gm = factory.createNewPlayer();
         stat = create(Karma.class.getSimpleName(), 1.0f);
         trader = factory.createNewStatTrader(stat);
+        new CustomTraderMod();
     }
 
     private int indexOf(String name) {
@@ -57,6 +60,53 @@ public class StatTraderManagementQuestionTests extends CustomTraderTest {
 
         new StatTraderManagementQuestion(gm, trader).sendQuestion();
         assertThat(gm, receivedBMLContaining("tag1,tag2,tag3"));
+    }
+
+    @Test
+    void testProperlyGetFace() throws SQLException {
+        long face = 24680;
+        CustomTraderMod.mod.faceSetter.setFaceFor(trader, face);
+        CustomTraderMod.mod.modelSetter.setModelFor(trader, HUMAN_MODEL_NAME);
+
+        new StatTraderManagementQuestion(gm, trader).sendQuestion();
+        assertThat(gm, receivedBMLContaining(face + "\";id=\"face\""));
+    }
+
+    @Test
+    void testProperlyGetFaceIfNotHuman() throws SQLException {
+        assert CustomTraderMod.mod.faceSetter.getFaceFor(trader) == null;
+        CustomTraderMod.mod.modelSetter.setModelFor(trader, TRADER_MODEL_NAME);
+
+        new StatTraderManagementQuestion(gm, trader).sendQuestion();
+        assertThat(gm, receivedBMLContaining("\"\";id=\"face\""));
+    }
+
+    @Test
+    void testProperlyGetsModelTrader() throws SQLException {
+        CustomTraderMod.mod.modelSetter.setModelFor(trader, TRADER_MODEL_NAME);
+
+        new StatTraderManagementQuestion(gm, trader).sendQuestion();
+        assertThat(gm, receivedBMLContaining("id=\"default\";text=\"Trader\";selected=\"true\""));
+        assertThat(gm, receivedBMLContaining("text=\"\";id=\"custom_model\""));
+    }
+
+    @Test
+    void testProperlyGetsModelHuman() throws SQLException {
+        CustomTraderMod.mod.modelSetter.setModelFor(trader, HUMAN_MODEL_NAME);
+
+        new StatTraderManagementQuestion(gm, trader).sendQuestion();
+        assertThat(gm, receivedBMLContaining("id=\"human\";text=\"Human\";selected=\"true\""));
+        assertThat(gm, receivedBMLContaining("text=\"\";id=\"custom_model\""));
+    }
+
+    @Test
+    void testProperlyGetsModel() throws SQLException {
+        String model = "custom.model";
+        CustomTraderMod.mod.modelSetter.setModelFor(trader, model);
+
+        new StatTraderManagementQuestion(gm, trader).sendQuestion();
+        assertThat(gm, receivedBMLContaining("id=\"custom\";text=\"Custom\";selected=\"true\""));
+        assertThat(gm, receivedBMLContaining(model + "\";id=\"custom_model\""));
     }
 
     // answer
@@ -99,8 +149,24 @@ public class StatTraderManagementQuestionTests extends CustomTraderTest {
         properties.setProperty("name", "%Name");
         new StatTraderManagementQuestion(gm, trader).answer(properties);
 
-        assertEquals(name, trader.getName());
-        assertThat(gm, receivedMessageContaining("shall remain " + name));
+        assertNotEquals(name, trader.getName());
+        assertThat(gm, receivedMessageContaining(name + " didn't like that name"));
+        assertThat(gm, receivedMessageContaining(name + " will now be known as "));
+    }
+
+    @Test
+    void testSetNameRandomWhenBlank() {
+        assert CustomTraderMod.namePrefix.equals("Trader");
+        String name = trader.getName();
+        Properties properties = new Properties();
+        properties.setProperty("confirm", "true");
+        properties.setProperty("name", "");
+        new StatTraderManagementQuestion(gm, trader).answer(properties);
+
+        assertNotEquals(name, trader.getName());
+        assertTrue(trader.getName().startsWith("Trader_"));
+        assertThat(gm, receivedMessageContaining(name + " chose a new name"));
+        assertThat(gm, receivedMessageContaining(name + " will now be known as "));
     }
 
     @Test
@@ -123,15 +189,125 @@ public class StatTraderManagementQuestionTests extends CustomTraderTest {
         assert CustomTraderDatabase.getTagFor(trader).equals("");
         CustomTraderDatabase.addStockItemTo(trader, 1, 1, 1, (byte)0, (byte)0, 1, new Enchantment[0], (byte)0, 1, 1, 1);
         CustomTraderDatabase.restock(trader);
+        String name = trader.getName();
 
         Properties properties = new Properties();
         properties.setProperty("confirm", "true");
+        properties.setProperty("name", name.substring(7));
         new StatTraderManagementQuestion(gm, trader).answer(properties);
 
         assertEquals("", CustomTraderDatabase.getTagFor(trader));
         assertEquals(1, CustomTraderDatabase.getStockFor(trader).length);
         assertEquals(1, trader.getInventory().getItems().size());
         assertEquals(stat, CustomTraderDatabase.getStatFor(trader));
+        assertEquals(name, trader.getName());
+    }
+
+    @Test
+    void testCustomizeFaceSent() throws SQLException {
+        CustomTraderMod.mod.modelSetter.setModelFor(trader, HUMAN_MODEL_NAME);
+        long oldFace = 112358;
+        CustomTraderMod.mod.faceSetter.setFaceFor(trader, oldFace);
+        Properties properties = new Properties();
+        properties.setProperty("face", "");
+        properties.setProperty("model", "human");
+        properties.setProperty("confirm", "true");
+        new StatTraderManagementQuestion(gm, trader).answer(properties);
+
+        assertEquals(oldFace, (long)CustomTraderMod.mod.faceSetter.getFaceFor(trader));
+        assertNotNull(factory.getCommunicator(gm).sendCustomizeFace);
+        assertThat(gm, didNotReceiveMessageContaining("Invalid"));
+    }
+
+    @Test
+    void testFaceChanged() throws SQLException {
+        CustomTraderMod.mod.modelSetter.setModelFor(trader, HUMAN_MODEL_NAME);
+        long newFace = 112358;
+        CustomTraderMod.mod.faceSetter.setFaceFor(trader, newFace + 1);
+
+        Properties properties = new Properties();
+        properties.setProperty("face", Long.toString(newFace));
+        properties.setProperty("model", "human");
+        properties.setProperty("confirm", "true");
+        new StatTraderManagementQuestion(gm, trader).answer(properties);
+
+        assertEquals(newFace, (long)CustomTraderMod.mod.faceSetter.getFaceFor(trader));
+        assertNull(factory.getCommunicator(gm).sendCustomizeFace);
+        assertThat(gm, didNotReceiveMessageContaining("Invalid"));
+    }
+
+    @Test
+    void testInvalidFace() throws SQLException {
+        long oldFace = 112358;
+        CustomTraderMod.mod.faceSetter.setFaceFor(trader, oldFace);
+        Properties properties = new Properties();
+        properties.setProperty("face", "abc");
+        properties.setProperty("confirm", "true");
+        new StatTraderManagementQuestion(gm, trader).answer(properties);
+
+        assertEquals(oldFace, (long)CustomTraderMod.mod.faceSetter.getFaceFor(trader));
+        assertNull(factory.getCommunicator(gm).sendCustomizeFace);
+        assertThat(gm, receivedMessageContaining("Invalid"));
+    }
+
+    @Test
+    void testAddsFaceIfModelSetHuman() throws SQLException {
+        String oldModel = "old.model";
+        CustomTraderMod.mod.modelSetter.setModelFor(trader, oldModel);
+        assert CustomTraderMod.mod.faceSetter.getFaceFor(trader) == null;
+        Properties properties = new Properties();
+        properties.setProperty("model", "human");
+        properties.setProperty("confirm", "true");
+        new StatTraderManagementQuestion(gm, trader).answer(properties);
+
+        assertEquals(HUMAN_MODEL_NAME, CustomTraderMod.mod.modelSetter.getModelFor(trader));
+        assertNotNull(CustomTraderMod.mod.faceSetter.getFaceFor(trader));
+    }
+
+    @Test
+    void testModelSetTrader() throws SQLException {
+        String oldModel = "old.model";
+        CustomTraderMod.mod.modelSetter.setModelFor(trader, oldModel);
+        Properties properties = new Properties();
+        properties.setProperty("model", "default");
+        properties.setProperty("custom_model", "blah");
+        properties.setProperty("confirm", "true");
+        new StatTraderManagementQuestion(gm, trader).answer(properties);
+
+        assertEquals(TRADER_MODEL_NAME, CustomTraderMod.mod.modelSetter.getModelFor(trader));
+        assertThat(gm, receivedMessageContaining(MODEL_CHANGE_SUCCESS));
+        assertThat(gm, didNotReceiveMessageContaining(MODEL_CHANGE_FAILURE));
+    }
+
+    @Test
+    void testModelSetHuman() throws SQLException {
+        String oldModel = "old.model";
+        CustomTraderMod.mod.modelSetter.setModelFor(trader, oldModel);
+        Properties properties = new Properties();
+        properties.setProperty("model", "human");
+        properties.setProperty("custom_model", "blah");
+        properties.setProperty("confirm", "true");
+        new StatTraderManagementQuestion(gm, trader).answer(properties);
+
+        assertEquals(HUMAN_MODEL_NAME, CustomTraderMod.mod.modelSetter.getModelFor(trader));
+        assertThat(gm, receivedMessageContaining(MODEL_CHANGE_SUCCESS));
+        assertThat(gm, didNotReceiveMessageContaining(MODEL_CHANGE_FAILURE));
+    }
+
+    @Test
+    void testModelSetCustom() throws SQLException {
+        String oldModel = "old.model";
+        String customModel = "custom.model";
+        CustomTraderMod.mod.modelSetter.setModelFor(trader, oldModel);
+        Properties properties = new Properties();
+        properties.setProperty("model", "custom");
+        properties.setProperty("custom_model", customModel);
+        properties.setProperty("confirm", "true");
+        new StatTraderManagementQuestion(gm, trader).answer(properties);
+
+        assertEquals(customModel, CustomTraderMod.mod.modelSetter.getModelFor(trader));
+        assertThat(gm, receivedMessageContaining(MODEL_CHANGE_SUCCESS));
+        assertThat(gm, didNotReceiveMessageContaining(MODEL_CHANGE_FAILURE));
     }
 
     @Test

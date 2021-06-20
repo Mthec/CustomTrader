@@ -17,6 +17,9 @@ import com.wurmonline.server.questions.*;
 import com.wurmonline.server.zones.VolaTile;
 import com.wurmonline.server.zones.Zones;
 import javassist.*;
+import mod.wurmunlimited.npcs.DestroyHandler;
+import mod.wurmunlimited.npcs.FaceSetter;
+import mod.wurmunlimited.npcs.ModelSetter;
 import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
 import mod.wurmunlimited.npcs.customtrader.stats.Favor;
 import mod.wurmunlimited.npcs.customtrader.stats.FavorPriest;
@@ -38,11 +41,19 @@ import java.util.logging.Logger;
 
 public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable, Initable, ServerStartedListener, PlayerMessageListener {
     private static final Logger logger = Logger.getLogger(CustomTraderMod.class.getName());
+    public static final String dbName = "customtrader.db";
     public static final int maxTagLength = 25;
     public static final int maxNameLength = 20;
+    public static CustomTraderMod mod;
     public static String namePrefix = "Trader";
+    public final FaceSetter faceSetter = new FaceSetter(this::isSpecialTrader, dbName);
+    public final ModelSetter modelSetter = new ModelSetter(this::isSpecialTrader, dbName);
     private boolean preventDecay = true;
     private final CommandWaitTimer restockTimer = new CommandWaitTimer(TimeConstants.MINUTE_MILLIS);
+
+    public CustomTraderMod() {
+        mod = this;
+    }
 
     static {
         Karma.register();
@@ -122,11 +133,6 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
                 "()Lcom/wurmonline/server/creatures/TradeHandler;",
                 () -> this::getTradeHandler);
 
-        manager.registerHook("com.wurmonline.server.creatures.Creature",
-                "destroy",
-                "()V",
-                () -> this::destroy);
-
         manager.registerHook("com.wurmonline.server.questions.QuestionParser",
                 "parseCreatureCreationQuestion",
                 "(Lcom/wurmonline/server/questions/CreatureCreationQuestion;)V",
@@ -141,6 +147,9 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
         ModCreatures.addCreature(new CustomTraderTemplate());
         ModCreatures.addCreature(new CurrencyTraderTemplate());
         ModCreatures.addCreature(new StatTraderTemplate());
+        faceSetter.init();
+        modelSetter.init();
+        DestroyHandler.addListener(this::isSpecialTrader, CustomTraderDatabase::deleteTrader);
     }
 
     @Override
@@ -254,15 +263,6 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
         }
 
         return handler;
-    }
-
-    Object destroy(Object o, Method method, Object[] args) throws InvocationTargetException, IllegalAccessException {
-        Creature creature = (Creature)o;
-        if (isSpecialTrader(creature)) {
-            CustomTraderDatabase.deleteTrader(creature);
-        }
-
-        return method.invoke(o, args);
     }
 
     Object creatureCreation(Object o, Method method, Object[] args) throws InvocationTargetException, IllegalAccessException, NoSuchFieldException {

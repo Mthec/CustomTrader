@@ -6,6 +6,7 @@ import mod.wurmunlimited.bml.BML;
 import mod.wurmunlimited.bml.BMLBuilder;
 import mod.wurmunlimited.npcs.customtrader.CustomTraderTemplate;
 
+import java.sql.SQLException;
 import java.util.Properties;
 import java.util.Random;
 
@@ -33,6 +34,11 @@ public class PlaceCustomTraderQuestion extends PlaceOrManageTraderQuestion {
             try {
                 Creature trader = CustomTraderTemplate.createNewTrader(tile, floorLevel, name, sex, responder.getKingdomId(), tag);
                 logger.info(responder.getName() + " created a custom trader: " + trader.getWurmId());
+                checkSaveFace(trader);
+                checkSaveModel(trader);
+            } catch (SQLException e) {
+                responder.getCommunicator().sendAlertServerMessage("An error occurred in the rifts of the void. The trader was created, but their appearance was not set.");
+                e.printStackTrace();
             } catch (Exception e) {
                 responder.getCommunicator().sendAlertServerMessage("An error occurred in the rifts of the void. The trader was not created.");
                 e.printStackTrace();

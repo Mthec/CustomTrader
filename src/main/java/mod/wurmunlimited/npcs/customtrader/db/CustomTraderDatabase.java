@@ -14,6 +14,7 @@ import com.wurmonline.server.items.NoSuchTemplateException;
 import com.wurmonline.server.spells.SpellEffect;
 import com.wurmonline.shared.exceptions.WurmServerException;
 import mod.wurmunlimited.npcs.customtrader.CurrencyTraderTemplate;
+import mod.wurmunlimited.npcs.customtrader.CustomTraderMod;
 import mod.wurmunlimited.npcs.customtrader.CustomTraderTemplate;
 import mod.wurmunlimited.npcs.customtrader.StatTraderTemplate;
 import mod.wurmunlimited.npcs.customtrader.stats.Stat;
@@ -138,7 +139,7 @@ public class CustomTraderDatabase {
         Connection db = null;
         try {
             if (dbString.isEmpty())
-                dbString = "jdbc:sqlite:" + Constants.dbHost + "/sqlite/" + "customtrader.db";
+                dbString = "jdbc:sqlite:" + Constants.dbHost + "/sqlite/" + CustomTraderMod.dbName;
             db = DriverManager.getConnection(dbString);
             if (!created) {
                 init(db);
