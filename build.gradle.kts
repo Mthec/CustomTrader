@@ -49,7 +49,7 @@ tasks {
         exclude("**/TradeHandler.class", "**/Trade.class", "**/TradingWindow.class", "**/CustomTraderTradeAction.class")
 
         manifest {
-            attributes["Implementation-Version"] = version
+            attributes["Implementation-Version"] = archiveVersion
         }
     }
 
