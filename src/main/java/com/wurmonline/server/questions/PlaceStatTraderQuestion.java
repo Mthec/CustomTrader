@@ -70,7 +70,7 @@ public class PlaceStatTraderQuestion extends PlaceOrManageTraderQuestion {
             try {
                 Creature trader = withTempFace(() -> StatTraderTemplate.createNewTrader(tile, floorLevel, name, sex, responder.getKingdomId(), stat, tag), responder.getWurmId());
                 logger.info(responder.getName() + " created a stat trader: " + trader.getWurmId());
-                checkSaveModel(trader);
+                checkCustomise(trader);
             } catch (SQLException e) {
                 responder.getCommunicator().sendAlertServerMessage("An error occurred in the rifts of the void. The trader was created, but their appearance was not set.");
                 e.printStackTrace();

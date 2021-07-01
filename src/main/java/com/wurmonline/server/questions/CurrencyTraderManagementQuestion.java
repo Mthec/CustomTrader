@@ -35,7 +35,6 @@ public class CurrencyTraderManagementQuestion extends PlaceOrManageTraderQuestio
             sendQuestion();
         } else if (wasSelected("confirm")) {
             checkSaveName(trader);
-            checkSaveModel(trader);
 
             int newTemplateIndex = getIntegerOrDefault("template", template.templateIndex);
             if (newTemplateIndex != template.templateIndex) {
@@ -58,6 +57,8 @@ public class CurrencyTraderManagementQuestion extends PlaceOrManageTraderQuestio
             new CustomTraderItemList(getResponder(), trader, PaymentType.currency).sendQuestion();
         } else if (wasSelected("dismiss")) {
             tryDismiss(trader, "custom");
+        } else {
+            checkCustomise(trader);
         }
     }
 

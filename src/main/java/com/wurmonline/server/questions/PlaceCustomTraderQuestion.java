@@ -34,7 +34,7 @@ public class PlaceCustomTraderQuestion extends PlaceOrManageTraderQuestion {
             try {
                 Creature trader = CustomTraderTemplate.createNewTrader(tile, floorLevel, name, sex, responder.getKingdomId(), tag);
                 logger.info(responder.getName() + " created a custom trader: " + trader.getWurmId());
-                checkSaveModel(trader);
+                checkCustomise(trader);
             } catch (SQLException e) {
                 responder.getCommunicator().sendAlertServerMessage("An error occurred in the rifts of the void. The trader was created, but their appearance was not set.");
                 e.printStackTrace();

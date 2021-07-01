@@ -8,6 +8,7 @@ val shortName = "customtrader"
 val wurmServerFolder = "E:/Steam/steamapps/common/Wurm Unlimited/WurmServerLauncher/"
 
 repositories {
+    mavenLocal()
     mavenCentral()
 }
 
@@ -16,10 +17,8 @@ dependencies {
     implementation(project(":BMLBuilder"))
     implementation(project(":PlaceNpc"))
     implementation(project(":CreatureCustomiser"))
-    implementation(fileTree(wurmServerFolder) { include("server.jar") })
-    implementation(fileTree(wurmServerFolder) { include("modlauncher.jar", "javassist.jar") })
-//    implementation(fileTree(wurmServerFolder + "lib/") { include("WurmUnlimitedCommon-1.9.2.7.jar", "guava-18.0.jar",
-//            "sqlite-jdbc-3.8.11.2.jar", "flyway-core-4.0.3.jar", "ServerLauncher-0.43.jar", "javassist-3.23.1.jar", "annotations-16.0.2.jar") })
+    implementation("com.wurmonline:server:1.9")
+    implementation("org.gotti.wurmunlimited:server-modlauncher:0.45")
 }
 
 configure<JavaPluginConvention> {

@@ -24,7 +24,6 @@ public class CustomTraderManagementQuestion extends PlaceOrManageTraderQuestion 
 
         if (wasSelected("confirm")) {
             checkSaveName(trader);
-            checkSaveModel(trader);
             checkSaveTag(trader, currentTag);
             checkStockOptions(trader);
         } else if (wasSelected("edit")) {
@@ -33,6 +32,8 @@ public class CustomTraderManagementQuestion extends PlaceOrManageTraderQuestion 
             new CustomTraderItemList(getResponder(), trader, PaymentType.coin).sendQuestion();
         } else if (wasSelected("dismiss")) {
             tryDismiss(trader, "custom");
+        } else {
+            checkCustomise(trader);
         }
     }
 

@@ -1,7 +1,6 @@
 package mod.wurmunlimited.npcs.customtrader;
 
 import com.wurmonline.server.creatures.Creature;
-import com.wurmonline.server.economy.FakeShop;
 import com.wurmonline.server.items.ItemList;
 import com.wurmonline.server.kingdom.Kingdom;
 import com.wurmonline.server.zones.VolaTile;
@@ -13,11 +12,16 @@ import mod.wurmunlimited.npcs.customtrader.stats.Stat;
 import java.util.Objects;
 
 public class CustomTraderObjectsFactory extends WurmObjectsFactory {
+    private static boolean createdTemplates = false;
+
     public CustomTraderObjectsFactory() throws Exception {
         super();
-        new CustomTraderTemplate().createCreateTemplateBuilder().build();
-        new CurrencyTraderTemplate().createCreateTemplateBuilder().build();
-        new StatTraderTemplate().createCreateTemplateBuilder().build();
+        if (!createdTemplates) {
+            new CustomTraderTemplate().createCreateTemplateBuilder().build();
+            new CurrencyTraderTemplate().createCreateTemplateBuilder().build();
+            new StatTraderTemplate().createCreateTemplateBuilder().build();
+            createdTemplates = true;
+        }
         CustomTraderMod.namePrefix = "Trader";
     }
 
@@ -89,9 +93,5 @@ public class CustomTraderObjectsFactory extends WurmObjectsFactory {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-    public void addShop(Creature creature, FakeShop shop) {
-        shops.put(creature, shop);
     }
 }

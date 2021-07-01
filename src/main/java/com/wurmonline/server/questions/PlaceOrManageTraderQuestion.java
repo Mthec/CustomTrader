@@ -7,42 +7,32 @@ import com.wurmonline.server.behaviours.Actions;
 import com.wurmonline.server.behaviours.Methods;
 import com.wurmonline.server.creatures.Creature;
 import com.wurmonline.server.items.Item;
-import com.wurmonline.server.players.Player;
 import com.wurmonline.server.structures.Structure;
 import com.wurmonline.server.zones.VolaTile;
 import com.wurmonline.shared.util.StringUtilities;
 import mod.wurmunlimited.bml.BML;
-import mod.wurmunlimited.npcs.FaceSetters;
 import mod.wurmunlimited.npcs.customtrader.CustomTraderMod;
 import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
 import mod.wurmunlimited.npcs.db.FaceSetterDatabase;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Random;
 
 import static com.wurmonline.server.creatures.CreaturePackageCaller.saveCreatureName;
-import static mod.wurmunlimited.npcs.FaceSetter.FACE_CHANGE_FAILURE;
-import static mod.wurmunlimited.npcs.FaceSetter.FACE_CHANGE_SUCCESS;
-import static mod.wurmunlimited.npcs.ModelSetter.*;
 
 public abstract class PlaceOrManageTraderQuestion extends CustomTraderQuestionExtension {
-
     private static final Random r = new Random();
+    protected static final ModelOption[] modelOptions = new ModelOption[] { ModelOption.TRADER, ModelOption.HUMAN, ModelOption.CUSTOM };
     protected static final String NO_TAG = "-";
     protected final List<String> allTags;
-    protected final ModelSetterQuestionHelper model;
-    protected final FaceSetterQuestionHelper face;
     private final boolean isNew;
 
     private PlaceOrManageTraderQuestion(Creature responder, String title, long target, @Nullable Creature trader) {
         super(responder, title, "", MANAGETRADER, target);
         allTags = CustomTraderDatabase.getAllTags();
         allTags.add(0, NO_TAG);
-        model = new ModelSetterQuestionHelper(CustomTraderMod.mod.modelSetter, trader, "Trader");
-        face = new FaceSetterQuestionHelper(CustomTraderMod.mod.faceSetter, trader);
         isNew = trader == null;
     }
 
@@ -127,54 +117,6 @@ public abstract class PlaceOrManageTraderQuestion extends CustomTraderQuestionEx
         return CustomTraderMod.mod.faceSetter.withTempFace(withTempFace, tempFace);
     }
 
-    private void checkSaveFace(Creature trader, boolean isHuman) {
-        FaceSetterQuestionHelper.FaceResponse response = face.getFace(getAnswer());
-        if (response.wasError && !isNew) {
-            getResponder().getCommunicator().sendAlertServerMessage("Invalid face value, ignoring.");
-        } else if (response.wasRandom) {
-            if (response.wasError) {
-                getResponder().getCommunicator().sendAlertServerMessage("Invalid face value, setting random.");
-            }
-
-            if (isHuman) {
-                try {
-                    getResponder().getCommunicator().sendCustomizeFace(response.face, CustomTraderMod.mod.faceSetter.createIdFor(trader, (Player)getResponder()));
-                } catch (FaceSetters.TooManyTransactionsException e) {
-                    logger.warning(e.getMessage());
-                    getResponder().getCommunicator().sendAlertServerMessage(e.getMessage());
-                }
-            } else {
-                CustomTraderMod.mod.faceSetter.deleteFaceFor(trader);
-            }
-        } else {
-            try {
-                CustomTraderMod.mod.faceSetter.setFaceFor(trader, response.face);
-                getResponder().getCommunicator().sendNormalServerMessage(trader.getName() + FACE_CHANGE_SUCCESS);
-            } catch (SQLException e) {
-                getResponder().getCommunicator().sendNormalServerMessage(trader.getName() + FACE_CHANGE_FAILURE);
-                logger.warning("Failed to set face (" + response.face + ") for (" + trader.getWurmId() + ").");
-                e.printStackTrace();
-            }
-        }
-    }
-
-    protected void checkSaveModel(Creature trader) {
-        String currentModel = CustomTraderMod.mod.modelSetter.getModelFor(trader);
-        String modelName = model.getModelName(getAnswer(), TRADER_MODEL_NAME);
-        if (!modelName.equals(currentModel)) {
-            try {
-                CustomTraderMod.mod.modelSetter.setModelFor(trader, modelName);
-                getResponder().getCommunicator().sendNormalServerMessage(trader.getName() + MODEL_CHANGE_SUCCESS);
-            } catch (SQLException e) {
-                getResponder().getCommunicator().sendNormalServerMessage(trader.getName() + MODEL_CHANGE_FAILURE);
-                logger.warning("Failed to set model (" + modelName + ") for (" + trader.getWurmId() + ").");
-                e.printStackTrace();
-            }
-        }
-
-        checkSaveFace(trader, modelName.equals(HUMAN_MODEL_NAME));
-    }
-
     protected String getTag() {
         int dropdown = getIntegerOrDefault("tags", 0);
         String tag;
@@ -254,6 +196,12 @@ public abstract class PlaceOrManageTraderQuestion extends CustomTraderQuestionEx
         }
     }
 
+    protected void checkCustomise(Creature trader) {
+        if (wasSelected("customise")) {
+            new CreatureCustomiserQuestion(getResponder(), trader, CustomTraderMod.mod.faceSetter, CustomTraderMod.mod.modelSetter, modelOptions).sendQuestion();
+        }
+    }
+
     protected void tryDismiss(Creature trader, String traderType) {
         Creature responder = getResponder();
         if (!trader.isTrading()) {
@@ -276,21 +224,20 @@ public abstract class PlaceOrManageTraderQuestion extends CustomTraderQuestionEx
     // sendQuestion
 
     protected BML middleBML(BML bml, String namePlaceholder) {
-        return model.addQuestion(
-                face.addQuestion(bml
+        return bml
                 .text("Use a 'tag' to use the same inventory contents for multiple custom/currency/stat traders.")
                 .text("Leave blank to keep the inventory unique to this custom trader.")
                 .newLine()
                 .harray(b -> b.label("Name: " + getPrefix()).entry("name", namePlaceholder, CustomTraderMod.maxNameLength))
                 .text("Leave blank for a random name.").italic()
-                .newLine()));
+                .newLine();
     }
 
     private BML addTagSelector(BML bml, String currentTag) {
         return bml
                 .harray(b -> b.label("Tag:").entry("tag", currentTag, CustomTraderMod.maxTagLength))
                 .text(" - or - ")
-                .harray(b -> b.dropdown("tags", Joiner.on(",").join(allTags)).spacer().button("edit", "Edit Tags"));
+                .harray(b -> b.dropdown("tags", Joiner.on(",").join(allTags)).If(!isNew, b2 -> b2.spacer().button("edit", "Edit Tags")));
     }
 
     protected String endBML(BML bml) {
@@ -301,7 +248,10 @@ public abstract class PlaceOrManageTraderQuestion extends CustomTraderQuestionEx
                   .radio("gender", "male", "Male", gender)
                   .radio("gender", "female", "Female", !gender)
                   .newLine()
+                  .checkbox("customise" ,"Open appearance customiser when done?", true)
+                  .newLine()
                   .harray(b -> b.button("Send"))
+                  .newLine()
                   .build();
     }
 
@@ -317,8 +267,9 @@ public abstract class PlaceOrManageTraderQuestion extends CustomTraderQuestionEx
                  .harray(b -> b
                       .button("confirm", "Confirm").spacer()
                       .button("list", "Items List").spacer()
-                      .button("dismiss", "Dismiss").confirm("Dismiss trader", "Are you sure you wish to dismiss " + trader.getName() + "?").spacer()
                       .button("cancel", "Cancel").spacer())
+                 .harray(b -> b.button("customise", "Appearance").spacer()
+                      .button("dismiss", "Dismiss").confirm("Dismiss trader", "Are you sure you wish to dismiss " + trader.getName() + "?"))
                  .build();
     }
 }

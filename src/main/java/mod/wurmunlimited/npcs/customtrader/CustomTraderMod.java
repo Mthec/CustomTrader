@@ -17,6 +17,7 @@ import com.wurmonline.server.questions.*;
 import com.wurmonline.server.zones.VolaTile;
 import com.wurmonline.server.zones.Zones;
 import javassist.*;
+import mod.wurmunlimited.npcs.CanGive;
 import mod.wurmunlimited.npcs.DestroyHandler;
 import mod.wurmunlimited.npcs.FaceSetter;
 import mod.wurmunlimited.npcs.ModelSetter;
@@ -30,6 +31,7 @@ import org.gotti.wurmunlimited.modloader.classhooks.HookManager;
 import org.gotti.wurmunlimited.modloader.interfaces.*;
 import org.gotti.wurmunlimited.modsupport.actions.ModActions;
 import org.gotti.wurmunlimited.modsupport.creatures.ModCreatures;
+import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -164,6 +166,12 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
         new PlaceCurrencyTraderAction();
         new PlaceStatTraderAction();
         PlaceNpcMenu.register();
+        CustomiserPlayerGiveAction.register(this::isSpecialTrader, new CanGive() {
+            @Override
+            public boolean canGive(@NotNull Creature performer, @NotNull Item source, @NotNull Creature target) {
+                return performer.getPower() >= 2 && isWearable(source);
+            }
+        });
 
         try {
             CustomTraderDatabase.loadTags();

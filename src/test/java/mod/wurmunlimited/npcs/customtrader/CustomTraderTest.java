@@ -5,6 +5,7 @@ import com.wurmonline.server.behaviours.PlaceCurrencyTraderAction;
 import com.wurmonline.server.behaviours.PlaceCustomTraderAction;
 import com.wurmonline.server.behaviours.PlaceNpcMenu;
 import com.wurmonline.server.behaviours.PlaceStatTraderAction;
+import com.wurmonline.server.questions.ModelOption;
 import mod.wurmunlimited.npcs.FaceSetter;
 import mod.wurmunlimited.npcs.ModelSetter;
 import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
@@ -20,6 +21,7 @@ import java.util.List;
 import java.util.Objects;
 
 public abstract class CustomTraderTest {
+    protected static final ModelOption[] modelOptions = new ModelOption[] { ModelOption.TRADER, ModelOption.HUMAN, ModelOption.CUSTOM };
     protected CustomTraderObjectsFactory factory;
     private static boolean init = false;
     protected static PlaceNpcMenu menu;

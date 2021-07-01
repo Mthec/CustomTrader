@@ -32,7 +32,6 @@ public class StatTraderManagementQuestion extends PlaceOrManageTraderQuestion {
 
         if (wasSelected("confirm")) {
             checkSaveName(trader);
-            checkSaveModel(trader);
 
             int newStatIndex = getIntegerOrDefault("stat", -1);
             StatFactory newStat;
@@ -78,6 +77,8 @@ public class StatTraderManagementQuestion extends PlaceOrManageTraderQuestion {
             new CustomTraderItemList(getResponder(), trader, PaymentType.other).sendQuestion();
         } else if (wasSelected("dismiss")) {
             tryDismiss(trader, "stat");
+        } else {
+            checkCustomise(trader);
         }
     }
 

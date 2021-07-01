@@ -50,7 +50,7 @@ public class PlaceCurrencyTraderQuestion extends PlaceOrManageTraderQuestion {
                 try {
                     Creature trader = CurrencyTraderTemplate.createNewTrader(tile, floorLevel, name, sex, responder.getKingdomId(), template.itemTemplate.getTemplateId(), tag);
                     logger.info(responder.getName() + " created a currency trader: " + trader.getWurmId());
-                    checkSaveModel(trader);
+                    checkCustomise(trader);
                 } catch (SQLException e) {
                     responder.getCommunicator().sendAlertServerMessage("An error occurred in the rifts of the void. The trader was created, but their appearance was not set.");
                     e.printStackTrace();
