@@ -17,7 +17,7 @@ import com.wurmonline.server.questions.*;
 import com.wurmonline.server.zones.VolaTile;
 import com.wurmonline.server.zones.Zones;
 import javassist.*;
-import mod.wurmunlimited.npcs.CanGive;
+import mod.wurmunlimited.npcs.CanGiveRemoveGMAndWearable;
 import mod.wurmunlimited.npcs.DestroyHandler;
 import mod.wurmunlimited.npcs.FaceSetter;
 import mod.wurmunlimited.npcs.ModelSetter;
@@ -147,7 +147,7 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
 
 
         FaceSetter.init(manager);
-        ModelSetter.init(manager);
+        ModelSetter.init(manager, new CustomTraderWearItems());
         DestroyHandler.addListener(creature -> CustomTraderDatabase.deleteTrader((Creature)creature));
         ModCreatures.init();
         ModCreatures.addCreature(new CustomTraderTemplate());
@@ -166,12 +166,18 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
         new PlaceCurrencyTraderAction();
         new PlaceStatTraderAction();
         PlaceNpcMenu.register();
-        CustomiserPlayerGiveAction.register(this::isSpecialTrader, new CanGive() {
+        CustomiserPlayerGiveAction.register(this::isSpecialTrader, new CanGiveRemoveGMAndWearable() {
             @Override
-            public boolean canGive(@NotNull Creature performer, @NotNull Item source, @NotNull Creature target) {
-                return performer.getPower() >= 2 && isWearable(source);
+            public boolean canGive(@NotNull Creature performer, @NotNull Item item, @NotNull Creature target) {
+                boolean other = super.canGive(performer, item, target);
+                if (other && Arrays.stream(CustomTraderDatabase.getStockFor(target)).anyMatch(it -> it.item.matches(item))) {
+                    performer.getCommunicator().sendNormalServerMessage(target.getName() + " cannot accept the " + item.getName() + ", as they would mix it up with their stock.");
+                    return false;
+                }
+                return other;
             }
         });
+        CustomiserPlayerRemoveAction.register(this::isSpecialTrader, new CanGiveRemoveGMAndWearable());
 
         try {
             CustomTraderDatabase.loadTags();
