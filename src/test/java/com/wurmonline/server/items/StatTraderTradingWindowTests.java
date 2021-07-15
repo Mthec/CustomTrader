@@ -26,7 +26,7 @@ public class StatTraderTradingWindowTests extends CustomTraderTest {
     private StatTraderTrade trade = null;
 
     @BeforeEach
-    protected void setUp() throws Throwable {
+    protected void setUp() throws Exception {
         super.setUp();
         player = factory.createNewPlayer();
         Stat stat = create(Karma.class.getSimpleName(), 1.0f);

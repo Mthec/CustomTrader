@@ -1,10 +1,11 @@
 package com.wurmonline.server.questions;
 
 import com.wurmonline.server.items.ItemTemplate;
+import org.jetbrains.annotations.Nullable;
 
 class Template {
     private final EligibleTemplates eligibleTemplates;
-    final ItemTemplate itemTemplate;
+    final @Nullable ItemTemplate itemTemplate;
     final int templateIndex;
     final String filter;
 

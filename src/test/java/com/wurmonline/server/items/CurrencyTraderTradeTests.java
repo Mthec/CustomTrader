@@ -23,11 +23,11 @@ public class CurrencyTraderTradeTests extends CustomTraderTest {
     private Item item;
 
     @BeforeEach
-    protected void setUp() throws Throwable {
+    protected void setUp() throws Exception {
         super.setUp();
         player = factory.createNewPlayer();
         int currency = ItemList.medallionHota;
-        trader = factory.createNewCurrencyTrader(currency, 1);
+        trader = factory.createNewCurrencyTrader(currency);
         assert trader.getShop() != null;
         CustomTraderDatabase.addStockItemTo(trader, 5, 5, 1, (byte)0, (byte)0, 5, new Enchantment[0], (byte)0, 5, 5, 0);
         CustomTraderDatabase.restock(trader);

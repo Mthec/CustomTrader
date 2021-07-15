@@ -2,10 +2,10 @@ package com.wurmonline.server.questions;
 
 import com.wurmonline.server.creatures.Creature;
 import com.wurmonline.server.creatures.FakeCreatureStatus;
-import com.wurmonline.server.items.ItemList;
-import com.wurmonline.server.items.Trade;
+import com.wurmonline.server.items.*;
 import com.wurmonline.server.players.Player;
 import com.wurmonline.shared.util.StringUtilities;
+import mod.wurmunlimited.npcs.customtrader.Currency;
 import mod.wurmunlimited.npcs.customtrader.CustomTraderMod;
 import mod.wurmunlimited.npcs.customtrader.CustomTraderTest;
 import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
@@ -14,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
+import java.util.Objects;
 import java.util.Properties;
 
 import static mod.wurmunlimited.Assert.*;
@@ -28,10 +29,10 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
     private static final String differentTag = "different";
 
     @BeforeEach
-    protected void setUp() throws Throwable {
+    protected void setUp() throws Exception {
         super.setUp();
         gm = factory.createNewPlayer();
-        trader = factory.createNewCurrencyTrader(ItemList.acorn, 1);
+        trader = factory.createNewCurrencyTrader(ItemList.acorn);
     }
 
     @Test
@@ -50,6 +51,14 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
 
         new CurrencyTraderManagementQuestion(gm, trader).sendQuestion();
         assertThat(gm, receivedBMLContaining("tag1,tag2,tag3"));
+    }
+
+    @Test
+    void testCurrentCurrencySetProperly() throws NoSuchTemplateException {
+        CustomTraderDatabase.setCurrencyFor(trader, new Currency(ItemTemplateFactory.getInstance().getTemplate(ItemList.sprout)));
+        new CurrencyTraderManagementQuestion(gm, trader).sendQuestion();
+
+        assertThat(gm, receivedBMLContaining("default=\"" + new EligibleTemplates("").getIndexOf(ItemList.sprout) + "\""));
     }
 
     // answer
@@ -141,7 +150,7 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
         assertEquals("", CustomTraderDatabase.getTagFor(trader));
         assertEquals(1, CustomTraderDatabase.getStockFor(trader).length);
         assertEquals(1, trader.getInventory().getItems().size());
-        assertEquals(ItemList.acorn, CustomTraderDatabase.getCurrencyFor(trader));
+        assertEquals(ItemList.acorn, Objects.requireNonNull(CustomTraderDatabase.getCurrencyFor(trader)).templateId);
         assertEquals(name, trader.getName());
     }
 
@@ -419,19 +428,100 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
         int templateIndex = 101;
         EligibleTemplates.init();
         EligibleTemplates template = new EligibleTemplates("");
-        int templateId = template.getTemplate(101).getTemplateId();
+        int templateId = template.getTemplate(templateIndex).getTemplateId();
         properties.setProperty("template", String.valueOf(templateIndex));
         new CurrencyTraderManagementQuestion(gm, trader).answer(properties);
 
-        assertEquals(templateId, CustomTraderDatabase.getCurrencyFor(trader));
+        assertEquals(templateId, Objects.requireNonNull(CustomTraderDatabase.getCurrencyFor(trader)).templateId);
         assertThat(gm, receivedMessageContaining("currency was set"));
     }
 
     @Test
-    void testCurrentCurrencySetProperly() {
-        CustomTraderDatabase.setCurrencyFor(trader, ItemList.sprout);
-        new CurrencyTraderManagementQuestion(gm, trader).sendQuestion();
+    void testSetCurrencyInvalidMaterial() throws NoSuchTemplateException {
+        CustomTraderDatabase.setCurrencyFor(trader, new Currency(ItemList.carrot, -1f, -1f, Materials.MATERIAL_VEGETARIAN, (byte)-1, true));
+        Properties properties = new Properties();
+        properties.setProperty("confirm", "true");
+        EligibleTemplates.init();
+        EligibleTemplates template = new EligibleTemplates("");
+        int templateId = template.getTemplate(template.getIndexOf(ItemList.carrot)).getTemplateId();
+        properties.setProperty("template", String.valueOf(template.getIndexOf(ItemList.pickAxe)));
+        new CurrencyTraderManagementQuestion(gm, trader).answer(properties);
 
-        assertThat(gm, receivedBMLContaining("default=\"" + new EligibleTemplates("").getIndexOf(ItemList.sprout) + "\""));
+        Currency currency = CustomTraderDatabase.getCurrencyFor(trader);
+        assertNotNull(currency);
+        assertEquals(ItemList.pickAxe, currency.templateId);
+        assertNotEquals(Materials.MATERIAL_VEGETARIAN, currency.material);
+        assertThat(gm, receivedMessageContaining("currency material was changed"));
+    }
+
+    @Test
+    void testSetCurrencyValidMaterial() throws NoSuchTemplateException {
+        CustomTraderDatabase.setCurrencyFor(trader, new Currency(ItemList.carrot, -1f, -1f, Materials.MATERIAL_VEGETARIAN, (byte)-1, true));
+        Properties properties = new Properties();
+        properties.setProperty("confirm", "true");
+        EligibleTemplates.init();
+        EligibleTemplates template = new EligibleTemplates("");
+        int templateId = template.getTemplate(template.getIndexOf(ItemList.carrot)).getTemplateId();
+        properties.setProperty("template", String.valueOf(template.getIndexOf(ItemList.cabbage)));
+        new CurrencyTraderManagementQuestion(gm, trader).answer(properties);
+
+        Currency currency = CustomTraderDatabase.getCurrencyFor(trader);
+        assertNotNull(currency);
+        assertEquals(ItemList.cabbage, currency.templateId);
+        assertEquals(Materials.MATERIAL_VEGETARIAN, currency.material);
+        assertThat(gm, didNotReceiveMessageContaining("currency material was changed"));
+        assertThat(gm, receivedMessageContaining("currency was set"));
+    }
+
+    @Test
+    void testAdvancedButtonSameTemplate() throws NoSuchTemplateException {
+        Currency currency = new Currency(ItemList.carrot, -1f, -1f, Materials.MATERIAL_VEGETARIAN, (byte)-1, true);
+        CustomTraderDatabase.setCurrencyFor(trader, currency);
+        String otherName = "blah";
+        String otherTag = "blah";
+        Properties properties = new Properties();
+        properties.setProperty("name", otherName);
+        properties.setProperty("tag", otherTag);
+        properties.setProperty("empty", "true");
+        properties.setProperty("full", "true");
+        properties.setProperty("advanced", "true");
+        EligibleTemplates.init();
+        EligibleTemplates template = new EligibleTemplates("");
+        properties.setProperty("template", String.valueOf(template.getIndexOf(ItemList.carrot)));
+        new CurrencyTraderManagementQuestion(gm, trader).answer(properties);
+        new AdvancedCurrencyQuestion(gm, trader, currency.getTemplate(), currency).sendQuestion();
+
+        assertEquals(currency.templateId, Objects.requireNonNull(CustomTraderDatabase.getCurrencyFor(trader)).templateId);
+        assertThat(gm, bmlEqual());
+        assertNotEquals(otherName, trader.getName());
+        assertNotEquals(otherTag, CustomTraderDatabase.getTagFor(trader));
+        assertThat(gm, didNotReceiveMessageContaining("got rid of"));
+        assertThat(gm, didNotReceiveMessageContaining("fully stocked"));
+    }
+
+    @Test
+    void testAdvancedButtonDifferentTemplate() throws NoSuchTemplateException {
+        Currency currency = new Currency(ItemList.carrot, -1f, -1f, Materials.MATERIAL_VEGETARIAN, (byte)-1, true);
+        CustomTraderDatabase.setCurrencyFor(trader, currency);
+        String otherName = "blah";
+        String otherTag = "blah";
+        Properties properties = new Properties();
+        properties.setProperty("name", otherName);
+        properties.setProperty("tag", otherTag);
+        properties.setProperty("empty", "true");
+        properties.setProperty("full", "true");
+        properties.setProperty("advanced", "true");
+        EligibleTemplates.init();
+        EligibleTemplates template = new EligibleTemplates("");
+        properties.setProperty("template", String.valueOf(template.getIndexOf(ItemList.cabbage)));
+        new CurrencyTraderManagementQuestion(gm, trader).answer(properties);
+        new AdvancedCurrencyQuestion(gm, trader, currency.getTemplate(), currency).sendQuestion();
+
+        assertEquals(currency.templateId, Objects.requireNonNull(CustomTraderDatabase.getCurrencyFor(trader)).templateId);
+        assertThat(gm, bmlNotEqual());
+        assertNotEquals(otherName, trader.getName());
+        assertNotEquals(otherTag, CustomTraderDatabase.getTagFor(trader));
+        assertThat(gm, didNotReceiveMessageContaining("got rid of"));
+        assertThat(gm, didNotReceiveMessageContaining("fully stocked"));
     }
 }

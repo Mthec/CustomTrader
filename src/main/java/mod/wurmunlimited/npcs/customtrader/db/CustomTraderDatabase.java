@@ -7,21 +7,16 @@ import com.wurmonline.server.TimeConstants;
 import com.wurmonline.server.creatures.Creature;
 import com.wurmonline.server.creatures.Creatures;
 import com.wurmonline.server.creatures.NoSuchCreatureException;
-import com.wurmonline.server.items.Item;
-import com.wurmonline.server.items.ItemFactory;
-import com.wurmonline.server.items.ItemSpellEffects;
-import com.wurmonline.server.items.NoSuchTemplateException;
+import com.wurmonline.server.items.*;
 import com.wurmonline.server.spells.SpellEffect;
 import com.wurmonline.shared.exceptions.WurmServerException;
-import mod.wurmunlimited.npcs.customtrader.CurrencyTraderTemplate;
-import mod.wurmunlimited.npcs.customtrader.CustomTraderMod;
-import mod.wurmunlimited.npcs.customtrader.CustomTraderTemplate;
-import mod.wurmunlimited.npcs.customtrader.StatTraderTemplate;
+import mod.wurmunlimited.npcs.customtrader.*;
 import mod.wurmunlimited.npcs.customtrader.stats.Stat;
 import mod.wurmunlimited.npcs.customtrader.stats.StatFactory;
 import mod.wurmunlimited.npcs.customtrader.stock.Enchantment;
 import mod.wurmunlimited.npcs.customtrader.stock.StockInfo;
 import mod.wurmunlimited.npcs.customtrader.stock.StockItem;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
@@ -31,7 +26,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
@@ -42,9 +36,9 @@ public class CustomTraderDatabase {
     private static boolean created = false;
     public static Clock clock = Clock.systemUTC();
     private static final Map<Creature, String> tags = new HashMap<>();
+    private static final Map<Creature, Currency> currencies = new HashMap<>();
 
     public interface Execute {
-
         void run(Connection db) throws SQLException;
     }
 
@@ -128,6 +122,16 @@ public class CustomTraderDatabase {
                     conn.prepareStatement("ALTER TABLE trader_stock ADD COLUMN aux INTEGER;").execute();
                     conn.prepareStatement("ALTER TABLE tag_stock ADD COLUMN aux INTEGER;").execute();
                     conn.prepareStatement("PRAGMA user_version = 1;").execute();
+                    version = 1;
+                }
+
+                if (version == 1) {
+                    conn.prepareStatement("ALTER TABLE currency_traders ADD COLUMN minimum_ql REAL;").execute();
+                    conn.prepareStatement("ALTER TABLE currency_traders ADD COLUMN exact_ql REAL;").execute();
+                    conn.prepareStatement("ALTER TABLE currency_traders ADD COLUMN material INTEGER;").execute();
+                    conn.prepareStatement("ALTER TABLE currency_traders ADD COLUMN rarity INTEGER;").execute();
+                    conn.prepareStatement("ALTER TABLE currency_traders ADD COLUMN weight INTEGER;").execute();
+                    conn.prepareStatement("PRAGMA user_version = 2;").execute();
                 }
             }
         }
@@ -193,14 +197,21 @@ public class CustomTraderDatabase {
     }
 
     // Currency Trader
-    public static void addNew(Creature trader, int currency, String tag) throws SQLException {
+    public static void addNew(@NotNull Creature trader, @NotNull Currency currency, String tag) throws SQLException {
         execute(db -> {
-            PreparedStatement ps = db.prepareStatement("INSERT OR IGNORE INTO currency_traders (id, currency, tag) VALUES (?, ?, ?)");
+            PreparedStatement ps = db.prepareStatement("INSERT OR IGNORE INTO currency_traders (id, currency, tag, minimum_ql, exact_ql, material, rarity, weight) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
             ps.setLong(1, trader.getWurmId());
-            ps.setInt(2, currency);
+            ps.setInt(2, currency.templateId);
             ps.setString(3, tag);
+            ps.setFloat(4, currency.minQL);
+            ps.setFloat(5, currency.exactQL);
+            ps.setByte(6, currency.material);
+            ps.setByte(7, currency.rarity);
+            ps.setBoolean(8, currency.onlyFullWeight);
 
             ps.execute();
+
+            currencies.put(trader, currency);
         });
     }
 
@@ -243,6 +254,7 @@ public class CustomTraderDatabase {
         }
 
         tags.remove(trader);
+        currencies.remove(trader);
     }
 
     private static void updateLastRestocked(Creature trader, StockItem stockItem) {
@@ -297,40 +309,75 @@ public class CustomTraderDatabase {
         }
     }
 
-    public static int getCurrencyFor(Creature trader) {
-        AtomicInteger currency = new AtomicInteger(-1);
+    public static @Nullable Currency getCurrencyFor(Creature trader) {
+        Currency possibleCurrency = currencies.get(trader);
+        if (possibleCurrency != null) {
+            return possibleCurrency;
+        }
+
+        AtomicReference<Currency> currency = new AtomicReference<>(null);
 
         try {
             execute(db -> {
-                PreparedStatement ps = db.prepareStatement("SELECT currency FROM currency_traders WHERE id=?");
+                PreparedStatement ps = db.prepareStatement("SELECT currency, minimum_ql, exact_ql, material, rarity, weight FROM currency_traders WHERE id=?");
                 ps.setLong(1, trader.getWurmId());
                 ResultSet rs = ps.executeQuery();
 
-                if (rs.isBeforeFirst())
-                    currency.set(rs.getInt(1));
-                else
-                    currency.set(-1);
+                if (rs.isBeforeFirst()) {
+                    try {
+                        currency.set(new Currency(
+                                rs.getInt(1),
+                                rs.getFloat(2),
+                                rs.getFloat(3),
+                                rs.getByte(4),
+                                rs.getByte(5),
+                                rs.getBoolean(6)
+                                ));
+                    } catch (NoSuchTemplateException e) {
+                        logger.warning("Error when fetching \"currency\" (" + rs.getInt(1) + ") for trader (" + trader.getWurmId() + "), not selecting a currency.");
+                        e.printStackTrace();
+                    }
+                }
             });
         } catch (SQLException e) {
             logger.warning("Error when fetching \"currency\" for trader (" + trader.getWurmId() + "), not selecting a currency.");
             e.printStackTrace();
-            return -1;
+            return null;
         }
 
-        return currency.get();
+        Currency curr = currency.get();
+        if (curr != null) {
+            currencies.put(trader, curr);
+        }
+        return curr;
     }
 
-    public static void setCurrencyFor(Creature trader, int currency) {
+    public static void setCurrencyFor(Creature trader, @NotNull ItemTemplate newCurrency, byte newMaterial, @NotNull Currency oldCurrency) {
+        setCurrencyFor(trader, new Currency(newCurrency, oldCurrency.minQL, oldCurrency.exactQL, newMaterial, oldCurrency.rarity, oldCurrency.onlyFullWeight));
+    }
+
+    public static void setCurrencyFor(Creature trader, @NotNull ItemTemplate newCurrency, @NotNull Currency oldCurrency) {
+        setCurrencyFor(trader, new Currency(newCurrency, oldCurrency.minQL, oldCurrency.exactQL, oldCurrency.material, oldCurrency.rarity, oldCurrency.onlyFullWeight));
+    }
+
+    public static void setCurrencyFor(Creature trader, Currency currency) {
         try {
             execute(db -> {
-                PreparedStatement ps = db.prepareStatement("UPDATE currency_traders SET currency=? WHERE id=?");
-                ps.setInt(1, currency);
-                ps.setLong(2, trader.getWurmId());
+                PreparedStatement ps = db.prepareStatement("UPDATE currency_traders SET currency=?, minimum_ql=?, exact_ql=?, material=?, rarity=?, weight=? WHERE id=?;");
+                ps.setInt(1, currency.templateId);
+                ps.setFloat(2, currency.minQL);
+                ps.setFloat(3, currency.exactQL);
+                ps.setByte(4, currency.material);
+                ps.setByte(5, currency.rarity);
+                ps.setBoolean(6, currency.onlyFullWeight);
+                ps.setLong(7, trader.getWurmId());
 
                 ps.execute();
+
+                currencies.put(trader, currency);
             });
         } catch (SQLException e) {
-            logger.warning("Error when setting \"currency\" (" + currency + ") for trader (" + trader.getWurmId() + ")");
+            logger.warning("Error when setting \"currency\" (" + currency.toString() + ") for trader (" + trader.getWurmId() + ").");
             e.printStackTrace();
         }
     }

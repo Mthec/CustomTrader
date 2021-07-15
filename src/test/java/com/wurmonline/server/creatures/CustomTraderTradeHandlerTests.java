@@ -31,7 +31,7 @@ public class CustomTraderTradeHandlerTests extends CustomTraderTest {
     private CustomTraderTradeHandler handler;
 
     @BeforeEach
-    protected void setUp() throws Throwable {
+    protected void setUp() throws Exception {
         super.setUp();
         player = factory.createNewPlayer();
         trader = factory.createNewCustomTrader();

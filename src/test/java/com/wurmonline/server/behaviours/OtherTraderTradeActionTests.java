@@ -30,7 +30,7 @@ public class OtherTraderTradeActionTests extends CustomTraderTest {
     private final Action act = mock(Action.class);
 
     @BeforeEach
-    protected void setUp() throws Throwable {
+    protected void setUp() throws Exception {
         super.setUp();
         ActionEntryBuilder.init();
         action = new OtherTraderTradeAction();

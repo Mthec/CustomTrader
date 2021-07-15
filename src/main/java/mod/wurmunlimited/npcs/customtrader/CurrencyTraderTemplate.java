@@ -77,7 +77,7 @@ public class CurrencyTraderTemplate implements ModCreature {
         return template.getTemplateId() == templateId;
     }
 
-    public static Creature createNewTrader(VolaTile tile, int floorLevel, String name, byte sex, byte kingdom, int currency, String tag) throws Exception {
+    public static Creature createNewTrader(VolaTile tile, int floorLevel, String name, byte sex, byte kingdom, Currency currency, String tag) throws Exception {
         Creature trader = Creature.doNew(templateId, (float)(tile.getTileX() << 2) + 2.0F, (float)(tile.getTileY() << 2) + 2.0F, 180.0F, tile.getLayer(), CustomTraderMod.namePrefix + "_" + name, sex, kingdom);
 
         if (floorLevel != 0) {

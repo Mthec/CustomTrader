@@ -33,7 +33,7 @@ public class PlaceCustomTraderActionTests extends CustomTraderTest {
 
     @Override
     @BeforeEach
-    protected void setUp() throws Throwable {
+    protected void setUp() throws Exception {
         super.setUp();
         action = mock(Action.class);
         when(action.getActionString()).thenAnswer(i -> actionString);

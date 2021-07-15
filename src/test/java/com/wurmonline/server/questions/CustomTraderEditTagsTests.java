@@ -19,7 +19,7 @@ public class CustomTraderEditTagsTests extends CustomTraderTest {
     private Player gm;
 
     @BeforeEach
-    protected void setUp() throws Throwable {
+    protected void setUp() throws Exception {
         super.setUp();
         gm = factory.createNewPlayer();
     }

@@ -2,6 +2,8 @@ package mod.wurmunlimited.npcs.customtrader;
 
 import com.wurmonline.server.creatures.Creature;
 import com.wurmonline.server.items.ItemList;
+import com.wurmonline.server.items.ItemTemplateFactory;
+import com.wurmonline.server.items.NoSuchTemplateException;
 import com.wurmonline.server.spells.Spells;
 import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
 import mod.wurmunlimited.npcs.customtrader.stats.Health;
@@ -17,6 +19,7 @@ import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -27,7 +30,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SuppressWarnings("SqlResolve")
 public class CustomTraderDatabaseTests extends CustomTraderTest {
-
     @Test
     void testAddNew() {
         Creature trader = factory.createNewCustomTrader();
@@ -203,20 +205,23 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
     // Currency
 
     @Test
-    void testGetCurrencyFor() {
-        Creature trader = factory.createNewCurrencyTrader(ItemList.acorn, 1);
+    void testGetCurrencyFor() throws NoSuchTemplateException {
+        Currency currency = new Currency(ItemList.acorn, 0, 1, (byte)2, (byte)3, false);
+        Creature trader = factory.createNewCurrencyTrader(currency);
 
-        assertEquals(ItemList.acorn, CustomTraderDatabase.getCurrencyFor(trader));
+        assertEquals(currency, Objects.requireNonNull(CustomTraderDatabase.getCurrencyFor(trader)));
     }
 
     @Test
-    void testCurrencyProperlySet() {
-        Creature trader = factory.createNewCurrencyTrader(ItemList.sprout, 10);
-        assert CustomTraderDatabase.getCurrencyFor(trader) == ItemList.sprout;
+    void testCurrencyProperlySet() throws NoSuchTemplateException {
+        Creature trader = factory.createNewCurrencyTrader(ItemList.sprout);
+        Currency oldCurrency = Objects.requireNonNull(CustomTraderDatabase.getCurrencyFor(trader));
+        assert oldCurrency.templateId == ItemList.sprout;
 
-        CustomTraderDatabase.setCurrencyFor(trader, ItemList.diamond);
+        Currency currency = new Currency(ItemTemplateFactory.getInstance().getTemplate(ItemList.diamond), oldCurrency.minQL + 1, oldCurrency.exactQL + 1, (byte)(oldCurrency.material + 1), (byte)(oldCurrency.rarity + 1), !oldCurrency.onlyFullWeight);
+        CustomTraderDatabase.setCurrencyFor(trader, currency);
 
-        assertEquals(ItemList.diamond, CustomTraderDatabase.getCurrencyFor(trader));
+        assertEquals(currency, Objects.requireNonNull(CustomTraderDatabase.getCurrencyFor(trader)));
     }
 
     // Stat
@@ -423,6 +428,14 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
         return hasAux;
     }
 
+    private boolean hasCurrencyColumns(ResultSet rs) throws SQLException {
+        List<String> columns = new ArrayList<>(Arrays.asList("minimum_ql", "exact_ql", "material", "rarity", "weight"));
+        while (rs.next()) {
+            columns.remove(rs.getString(2));
+        }
+        return columns.isEmpty();
+    }
+
     @Test
     void testOldDBUpdatesProperly() {
         execute( db -> {
@@ -456,10 +469,18 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
                                         "restock_interval INTEGER," +
                                         "UNIQUE(trader_id, template_id, ql, material, rarity, weight, enchantments) ON CONFLICT REPLACE" +
                                         ");").execute();
+
+            db.prepareStatement("DROP TABLE currency_traders;").execute();
+            db.prepareStatement("CREATE TABLE IF NOT EXISTS currency_traders (" +
+                                               "id INTEGER UNIQUE," +
+                                               "currency INTEGER," +
+                                               "tag TEXT" +
+                                               ");").execute();
             db.prepareStatement("PRAGMA user_version = 0;").execute();
 
             assert !hasAuxColumn(db.prepareStatement("PRAGMA table_info('trader_stock')").executeQuery());
             assert !hasAuxColumn(db.prepareStatement("PRAGMA table_info('tag_stock')").executeQuery());
+            assert !hasCurrencyColumns(db.prepareStatement("PRAGMA table_info('currency_traders')").executeQuery());
 
             try {
                 ReflectionUtil.callPrivateMethod(null, CustomTraderDatabase.class.getDeclaredMethod("init", Connection.class), db);
@@ -467,10 +488,9 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
                 throw new RuntimeException(e);
             }
 
-            ResultSet rs = db.prepareStatement("PRAGMA table_info('trader_stock');").executeQuery();
-            assertTrue(hasAuxColumn(rs));
-            rs = db.prepareStatement("PRAGMA table_info('tag_stock');").executeQuery();
-            assertTrue(hasAuxColumn(rs));
+            assertTrue(hasAuxColumn(db.prepareStatement("PRAGMA table_info('trader_stock');").executeQuery()));
+            assertTrue(hasAuxColumn(db.prepareStatement("PRAGMA table_info('tag_stock');").executeQuery()));
+            assertTrue(hasCurrencyColumns(db.prepareStatement("PRAGMA table_info('currency_traders');").executeQuery()));
         });
     }
 

@@ -18,7 +18,7 @@ public class PlaceOrManageTraderQuestionTests extends CustomTraderTest {
     private PlaceOrManageTraderQuestion question;
     
     @BeforeEach
-    protected void setUp() throws Throwable {
+    protected void setUp() throws Exception {
         super.setUp();
         gm = factory.createNewPlayer();
         new CustomTraderMod();

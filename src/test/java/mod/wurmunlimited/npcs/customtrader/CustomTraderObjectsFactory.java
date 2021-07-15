@@ -1,7 +1,10 @@
 package mod.wurmunlimited.npcs.customtrader;
 
 import com.wurmonline.server.creatures.Creature;
+import com.wurmonline.server.items.Item;
 import com.wurmonline.server.items.ItemList;
+import com.wurmonline.server.items.ItemTemplateFactory;
+import com.wurmonline.server.items.NoSuchTemplateException;
 import com.wurmonline.server.kingdom.Kingdom;
 import com.wurmonline.server.zones.VolaTile;
 import com.wurmonline.server.zones.Zones;
@@ -48,6 +51,14 @@ public class CustomTraderObjectsFactory extends WurmObjectsFactory {
     }
 
     public Creature createNewCurrencyTrader(VolaTile tile, String name, byte sex, byte kingdom, int currency, String tag) {
+        try {
+            return createNewCurrencyTrader(tile, name, sex, kingdom, new Currency(ItemTemplateFactory.getInstance().getTemplate(currency)), tag);
+        } catch (NoSuchTemplateException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public Creature createNewCurrencyTrader(VolaTile tile, String name, byte sex, byte kingdom, Currency currency, String tag) {
         Creature trader;
         try {
             trader = CurrencyTraderTemplate.createNewTrader(tile, 0, name, sex, kingdom, currency, tag);
@@ -65,7 +76,11 @@ public class CustomTraderObjectsFactory extends WurmObjectsFactory {
         return createNewCurrencyTrader("");
     }
 
-    public Creature createNewCurrencyTrader(int currency, int multiplier) {
+    public Creature createNewCurrencyTrader(Currency currency) {
+        return createNewCurrencyTrader(Zones.getOrCreateTile(123, 321, true), randomName("Bob"), (byte)0, Kingdom.KINGDOM_FREEDOM, currency, "");
+    }
+
+    public Creature createNewCurrencyTrader(int currency) {
         return createNewCurrencyTrader(Zones.getOrCreateTile(123, 321, true), randomName("Bob"), (byte)0, Kingdom.KINGDOM_FREEDOM, currency, "");
     }
 
@@ -93,5 +108,21 @@ public class CustomTraderObjectsFactory extends WurmObjectsFactory {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public Item createNewItem(Currency currency) {
+        Item item = createNewItem(currency.templateId);
+        if (currency.exactQL > 0) {
+            item.setQualityLevel(currency.exactQL);
+        } else if (currency.minQL > 0) {
+            item.setQualityLevel(currency.minQL);
+        }
+        if (currency.material >= 0) {
+            item.setMaterial(currency.material);
+        }
+        if (currency.rarity >= 0) {
+            item.setRarity(currency.rarity);
+        }
+        return item;
     }
 }

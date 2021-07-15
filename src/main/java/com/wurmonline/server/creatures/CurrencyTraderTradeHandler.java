@@ -1,12 +1,18 @@
 package com.wurmonline.server.creatures;
 
-import com.wurmonline.server.items.*;
+import com.wurmonline.server.items.Item;
+import com.wurmonline.server.items.Trade;
+import com.wurmonline.server.items.TradingWindow;
+import com.wurmonline.server.questions.WeightHelper;
+import mod.wurmunlimited.npcs.customtrader.Currency;
 import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
 import mod.wurmunlimited.npcs.customtrader.stock.StockInfo;
 import mod.wurmunlimited.npcs.customtrader.stock.StockItem;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -14,36 +20,31 @@ public class CurrencyTraderTradeHandler extends TradeHandler {
     private static final Logger logger = Logger.getLogger(CurrencyTraderTradeHandler.class.getName());
     private final Creature trader;
     private final Trade trade;
-    private final ItemTemplate currency;
+    private final Currency currency;
     private final ArrayList<StockItem> prices = new ArrayList<>();
     private boolean balanced = false;
     private boolean waiting = false;
+    private final Set<Currency.MatchStatus> sentMessages = new HashSet<>();
     public final boolean aborted;
 
     public CurrencyTraderTradeHandler(Creature trader, Trade trade) {
-        ItemTemplate tempCurrency;
         boolean tempAborted;
         this.trader = trader;
         this.trade = trade;
-        int curr = CustomTraderDatabase.getCurrencyFor(trader);
-        ItemTemplate template;
-        try {
-            template = ItemTemplateFactory.getInstance().getTemplate(curr);
-            tempCurrency = template;
+        currency = CustomTraderDatabase.getCurrencyFor(trader);
+        if (currency != null) {
 
             for (StockInfo info : CustomTraderDatabase.getStockFor(trader)) {
                 prices.add(info.item);
             }
 
-            trade.creatureOne.getCommunicator().sendSafeServerMessage(trader.getName() + " says 'I will trade each of my goods in exchange for " + template.getPlural() + ".'");
+            trade.creatureOne.getCommunicator().sendSafeServerMessage(trader.getName() + " says 'I will trade each of my goods in exchange for " + currency.getPlural() + ".'");
             tempAborted = false;
-        } catch (NoSuchTemplateException e) {
-            e.printStackTrace();
-            tempCurrency = null;
+        } else {
+            logger.warning("Currency Trader currency was null when initiating trade.");
             tempAborted = true;
             trade.creatureOne.getCommunicator().sendAlertServerMessage(trader.getName() + " looks confused and ends the trade.");
         }
-        currency = tempCurrency;
         aborted = tempAborted;
     }
 
@@ -128,7 +129,7 @@ public class CurrencyTraderTradeHandler extends TradeHandler {
 
                 if (diff > 0) {
                     waiting = true;
-                    trade.creatureOne.getCommunicator().sendSafeServerMessage(trader.getName() + " demands " + diff + " more " + (diff == 1 ? currency.getName() : currency.getPlural()) + " to make the trade.");
+                    trade.creatureOne.getCommunicator().sendSafeServerMessage(trader.getName() + " demands " + diff + " more " + currency.getNameFor(diff) + " to make the trade.");
                 } else if (diff < 0) {
                     while (diff < 0) {
                         Item item = requestWindow.getAllItems()[0];
@@ -150,11 +151,50 @@ public class CurrencyTraderTradeHandler extends TradeHandler {
     private void suckCurrency() {
         TradingWindow offerWindow = trade.getTradingWindow(2);
         TradingWindow requestWindow = trade.getTradingWindow(4);
+        sentMessages.clear();
 
         for (Item item : offerWindow.getAllItems()) {
-            if (item.getTemplate() == currency) {
-                offerWindow.removeItem(item);
-                requestWindow.addItem(item);
+            switch (currency.matches(item)) {
+                case MATCHES:
+                    offerWindow.removeItem(item);
+                    requestWindow.addItem(item);
+                    break;
+                case WRONG_TEMPLATE:
+                    if (!sentMessages.contains(Currency.MatchStatus.WRONG_TEMPLATE)) {
+                        trade.creatureOne.getCommunicator().sendSafeServerMessage(trader.getName() + " says 'I will only accept " + currency.getName() + ".'");
+                        sentMessages.add(Currency.MatchStatus.WRONG_TEMPLATE);
+                    }
+                    break;
+                case QL_TOO_LOW:
+                    if (!sentMessages.contains(Currency.MatchStatus.QL_TOO_LOW)) {
+                        trade.creatureOne.getCommunicator().sendSafeServerMessage(trader.getName() + " says 'I will only accept " + currency.getTemplate().getPlural() + " that are " + currency.minQL + "ql or greater.'");
+                        sentMessages.add(Currency.MatchStatus.QL_TOO_LOW);
+                    }
+                    break;
+                case QL_DOES_NOT_MATCH_EXACT:
+                    if (!sentMessages.contains(Currency.MatchStatus.QL_DOES_NOT_MATCH_EXACT)) {
+                        trade.creatureOne.getCommunicator().sendSafeServerMessage(trader.getName() + " says 'I will only accept " + currency.getTemplate().getPlural() + " that are exactly " + currency.exactQL + "ql.'");
+                        sentMessages.add(Currency.MatchStatus.QL_DOES_NOT_MATCH_EXACT);
+                    }
+                    break;
+                case WRONG_MATERIAL:
+                    if (!sentMessages.contains(Currency.MatchStatus.WRONG_MATERIAL)) {
+                        trade.creatureOne.getCommunicator().sendSafeServerMessage(trader.getName() + " says 'I will only accept " + currency.getTemplate().getPlural() + " that are made of " + currency.material + ".'");
+                        sentMessages.add(Currency.MatchStatus.WRONG_MATERIAL);
+                    }
+                    break;
+                case WRONG_RARITY:
+                    if (!sentMessages.contains(Currency.MatchStatus.WRONG_RARITY)) {
+                        trade.creatureOne.getCommunicator().sendSafeServerMessage(trader.getName() + " says 'I will only accept " + currency.getTemplate().getPlural() + " that are " + currency.rarity + ".'");
+                        sentMessages.add(Currency.MatchStatus.WRONG_RARITY);
+                    }
+                    break;
+                case DOES_NOT_WEIGH_ENOUGH:
+                    if (!sentMessages.contains(Currency.MatchStatus.DOES_NOT_WEIGH_ENOUGH)) {
+                        trade.creatureOne.getCommunicator().sendSafeServerMessage(trader.getName() + " says 'I will only accept " + currency.getTemplate().getPlural() + " that weigh " + WeightHelper.toString(currency.getTemplate().getWeightGrams()) + "kg.'");
+                        sentMessages.add(Currency.MatchStatus.DOES_NOT_WEIGH_ENOUGH);
+                    }
+                    break;
             }
         }
     }

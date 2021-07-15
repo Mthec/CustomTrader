@@ -19,7 +19,7 @@ public class HelperTests extends CustomTraderTest {
     
     @Override
     @BeforeEach
-    protected void setUp() throws Throwable {
+    protected void setUp() throws Exception {
         super.setUp();
         trader = factory.createNewCustomTrader();
     }

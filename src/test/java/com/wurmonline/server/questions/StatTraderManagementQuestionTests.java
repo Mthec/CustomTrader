@@ -32,7 +32,7 @@ public class StatTraderManagementQuestionTests extends CustomTraderTest {
     private static final String differentTag = "different";
 
     @BeforeEach
-    protected void setUp() throws Throwable {
+    protected void setUp() throws Exception {
         super.setUp();
         gm = factory.createNewPlayer();
         stat = create(Karma.class.getSimpleName(), 1.0f);

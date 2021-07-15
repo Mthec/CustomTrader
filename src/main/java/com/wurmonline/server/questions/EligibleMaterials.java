@@ -149,4 +149,9 @@ class EligibleMaterials {
 
         return 0;
     }
+
+    boolean isEligible(byte material) {
+        int index = getIndexOf(material);
+        return index != 0 || getMaterial(0) == material;
+    }
 }

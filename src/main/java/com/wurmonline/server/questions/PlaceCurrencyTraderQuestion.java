@@ -4,13 +4,13 @@ import com.wurmonline.server.creatures.Creature;
 import com.wurmonline.server.zones.VolaTile;
 import mod.wurmunlimited.bml.BML;
 import mod.wurmunlimited.bml.BMLBuilder;
+import mod.wurmunlimited.npcs.customtrader.Currency;
 import mod.wurmunlimited.npcs.customtrader.CurrencyTraderTemplate;
 
 import java.sql.SQLException;
 import java.util.Properties;
 
 public class PlaceCurrencyTraderQuestion extends PlaceOrManageTraderQuestion {
-
     private final VolaTile tile;
     private final int floorLevel;
     private Template template;
@@ -48,7 +48,11 @@ public class PlaceCurrencyTraderQuestion extends PlaceOrManageTraderQuestion {
 
             if (locationIsValid(responder, tile)) {
                 try {
-                    Creature trader = CurrencyTraderTemplate.createNewTrader(tile, floorLevel, name, sex, responder.getKingdomId(), template.itemTemplate.getTemplateId(), tag);
+                    if (template.itemTemplate == null) {
+                        throw new Exception();
+                    }
+
+                    Creature trader = CurrencyTraderTemplate.createNewTrader(tile, floorLevel, name, sex, responder.getKingdomId(), new Currency(template.itemTemplate), tag);
                     logger.info(responder.getName() + " created a currency trader: " + trader.getWurmId());
                     checkCustomise(trader);
                 } catch (SQLException e) {
@@ -70,6 +74,7 @@ public class PlaceCurrencyTraderQuestion extends PlaceOrManageTraderQuestion {
                              .text("This trader will only accept a certain type of item in exchange for goods.");
         bml = middleBML(bml, "")
                              .text("Currency:")
+                             .text("For advanced currency options, select Manage on the trader when placed.")
                              .text("Filter available templates:")
                              .text("* is a wildcard that stands in for one or more characters.\ne.g. *clay* to find all clay items or lump* to find all types of lump.")
                              .newLine()

@@ -2,16 +2,15 @@ package com.wurmonline.server.questions;
 
 import com.wurmonline.server.creatures.Creature;
 import com.wurmonline.server.items.ItemList;
-import com.wurmonline.server.items.ItemTemplate;
 import com.wurmonline.server.items.ItemTemplateFactory;
 import com.wurmonline.server.items.NoSuchTemplateException;
 import com.wurmonline.server.players.Player;
 import com.wurmonline.server.spells.Spell;
 import com.wurmonline.server.spells.Spells;
 import com.wurmonline.shared.constants.ItemMaterials;
-import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
 import mod.wurmunlimited.npcs.customtrader.CustomTraderObjectsFactory;
 import mod.wurmunlimited.npcs.customtrader.CustomTraderTest;
+import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
 import mod.wurmunlimited.npcs.customtrader.stock.Enchantment;
 import mod.wurmunlimited.npcs.customtrader.stock.StockInfo;
 import mod.wurmunlimited.npcs.customtrader.stock.StockItem;
@@ -19,11 +18,12 @@ import org.gotti.wurmunlimited.modloader.ReflectionUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Objects;
 import java.util.Properties;
 
 import static com.wurmonline.server.questions.CustomTraderItemsConfigurationQuestion.ItemDefinitionStage.*;
 import static mod.wurmunlimited.Assert.*;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class CustomTraderItemsConfigurationQuestionTests extends CustomTraderTest {
@@ -48,7 +48,7 @@ public class CustomTraderItemsConfigurationQuestionTests extends CustomTraderTes
 
             if (stage != TEMPLATE) {
                 Template template = new Template(templateIndex, "");
-                assert template.itemTemplate.getName().equals("rake");
+                assert Objects.requireNonNull(template.itemTemplate).getName().equals("rake");
                 ReflectionUtil.setPrivateField(question, CustomTraderItemsConfigurationQuestion.class.getDeclaredField("template"), template);
                 EligibleMaterials materials = new EligibleMaterials(template.itemTemplate);
                 ReflectionUtil.setPrivateField(question, CustomTraderItemsConfigurationQuestion.class.getDeclaredField("materials"), materials);

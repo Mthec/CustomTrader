@@ -36,7 +36,7 @@ public class CustomTraderModTests extends CustomTraderTest {
     private int normalItemCount;
 
     @BeforeEach
-    protected void setUp() throws Throwable {
+    protected void setUp() throws Exception {
         super.setUp();
         customTrader = factory.createNewCustomTrader();
         normalTrader = factory.createNewTrader();

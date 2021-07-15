@@ -27,7 +27,7 @@ public class CustomTraderManagementQuestionTests extends CustomTraderTest {
     private static final String differentTag = "different";
 
     @BeforeEach
-    protected void setUp() throws Throwable {
+    protected void setUp() throws Exception {
         super.setUp();
         gm = factory.createNewPlayer();
         trader = factory.createNewCustomTrader();

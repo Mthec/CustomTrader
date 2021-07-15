@@ -14,13 +14,12 @@ import static mod.wurmunlimited.Assert.receivedBMLContaining;
 import static mod.wurmunlimited.Assert.receivedMessageContaining;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CustomTraderRenameTagsTests extends CustomTraderTest {
     private Player gm;
 
     @BeforeEach
-    protected void setUp() throws Throwable {
+    protected void setUp() throws Exception {
         super.setUp();
         gm = factory.createNewPlayer();
     }

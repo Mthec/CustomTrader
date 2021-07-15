@@ -27,7 +27,7 @@ public abstract class CustomTraderTest {
     protected static PlaceNpcMenu menu;
 
     @BeforeEach
-    protected void setUp() throws Throwable {
+    protected void setUp() throws Exception {
         factory = new CustomTraderObjectsFactory();
 
         if (!init) {

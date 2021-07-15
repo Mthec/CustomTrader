@@ -1,10 +1,8 @@
 package com.wurmonline.server.creatures;
 
-import com.wurmonline.server.items.CurrencyTraderTrade;
-import com.wurmonline.server.items.Item;
-import com.wurmonline.server.items.ItemList;
-import com.wurmonline.server.items.OtherTraderTrade;
+import com.wurmonline.server.items.*;
 import com.wurmonline.server.players.Player;
+import mod.wurmunlimited.npcs.customtrader.Currency;
 import mod.wurmunlimited.npcs.customtrader.CustomTraderMod;
 import mod.wurmunlimited.npcs.customtrader.CustomTraderTest;
 import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
@@ -28,31 +26,39 @@ import static org.mockito.Mockito.when;
 public class CurrencyTraderTradeHandlerTests extends CustomTraderTest {
     private Creature trader;
     private Player player;
-    private int currency;
+    private Currency currency;
     private CurrencyTraderTrade trade;
     private CurrencyTraderTradeHandler handler;
 
     @BeforeEach
-    protected void setUp() throws Throwable {
+    protected void setUp() throws Exception {
         super.setUp();
         player = factory.createNewPlayer();
-        currency = ItemList.medallionHota;
-        trader = factory.createNewCurrencyTrader(currency, 1);
+        currency = new Currency(ItemTemplateFactory.getInstance().getTemplate(ItemList.medallionHota));
+        trader = factory.createNewCurrencyTrader(currency.templateId);
         assert trader.getShop() != null;
         CustomTraderDatabase.addStockItemTo(trader, 5, 5, 1, (byte)0, (byte)0, 5, new Enchantment[0], (byte)0, 5, 5, 0);
         CustomTraderDatabase.restock(trader);
-        trade = new CurrencyTraderTrade(player, trader);
-        player.setTrade(trade);
-        trader.setTrade(trade);
-        handler = new CurrencyTraderTradeHandler(trader, trade);
-        ReflectionUtil.setPrivateField(trader, Creature.class.getDeclaredField("tradeHandler"), handler);
-        handler.addItemsToTrade();
+        resetTrade();
     }
 
     private void selectPrize() {
         Item prize = trade.getTradingWindow(1).getItems()[0];
         trade.getTradingWindow(1).removeItem(prize);
         trade.getTradingWindow(3).addItem(prize);
+    }
+    
+    private void resetTrade() {
+        try {
+            trade = new CurrencyTraderTrade(player, trader);
+            player.setTrade(trade);
+            trader.setTrade(trade);
+            handler = new CurrencyTraderTradeHandler(trader, trade);
+            ReflectionUtil.setPrivateField(trader, Creature.class.getDeclaredField("tradeHandler"), handler);
+            handler.addItemsToTrade();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Test
@@ -85,7 +91,112 @@ public class CurrencyTraderTradeHandlerTests extends CustomTraderTest {
         handler.balance();
         assertEquals(1, trade.getTradingWindow(2).getAllItems().length);
         assertEquals(1, trade.getTradingWindow(4).getAllItems().length);
-        assertEquals(currency, trade.getTradingWindow(4).getAllItems()[0].getTemplateId());
+        assertEquals(currency.templateId, trade.getTradingWindow(4).getAllItems()[0].getTemplateId());
+    }
+
+    @Test
+    void testOnlyExactQLCurrencySucked() throws NoSuchTemplateException {
+        currency = new Currency(ItemList.log, -1, 10, (byte)-1, (byte)-1, false);
+        CustomTraderDatabase.setCurrencyFor(trader, currency);
+        trade.end(trader, true);
+        resetTrade();
+        
+        selectPrize();
+        Item item = factory.createNewItem(currency);
+        Item notCurrency = factory.createNewItem(currency);
+        notCurrency.setQualityLevel(9);
+        trade.getTradingWindow(2).addItem(item);
+        trade.getTradingWindow(2).addItem(notCurrency);
+
+        handler.balance();
+        assertEquals(1, trade.getTradingWindow(2).getAllItems().length);
+        assertEquals(1, trade.getTradingWindow(4).getAllItems().length);
+        assertNotEquals(Currency.MatchStatus.MATCHES, currency.matches(trade.getTradingWindow(2).getAllItems()[0]));
+        assertEquals(Currency.MatchStatus.MATCHES, currency.matches(trade.getTradingWindow(4).getAllItems()[0]));
+    }
+
+    @Test
+    void testOnlyMinimumQLCurrencySucked() throws NoSuchTemplateException {
+        currency = new Currency(ItemList.log, 20, -1, (byte)-1, (byte)-1, false);
+        CustomTraderDatabase.setCurrencyFor(trader, currency);
+        trade.end(trader, true);
+        resetTrade();
+
+        selectPrize();
+        Item item = factory.createNewItem(currency);
+        Item notCurrency = factory.createNewItem(currency);
+        notCurrency.setQualityLevel(19);
+        trade.getTradingWindow(2).addItem(item);
+        trade.getTradingWindow(2).addItem(notCurrency);
+
+        handler.balance();
+        assertEquals(1, trade.getTradingWindow(2).getAllItems().length);
+        assertEquals(1, trade.getTradingWindow(4).getAllItems().length);
+        assertNotEquals(Currency.MatchStatus.MATCHES, currency.matches(trade.getTradingWindow(2).getAllItems()[0]));
+        assertEquals(Currency.MatchStatus.MATCHES, currency.matches(trade.getTradingWindow(4).getAllItems()[0]));
+    }
+
+    @Test
+    void testOnlyMatchingMaterialCurrencySucked() throws NoSuchTemplateException {
+        currency = new Currency(ItemList.log, -1, -1, Materials.MATERIAL_WOOD_APPLE, (byte)-1, false);
+        CustomTraderDatabase.setCurrencyFor(trader, currency);
+        trade.end(trader, true);
+        resetTrade();
+
+        selectPrize();
+        Item item = factory.createNewItem(currency);
+        Item notCurrency = factory.createNewItem(currency);
+        notCurrency.setMaterial((byte)(Materials.MATERIAL_WOOD_APPLE + 1));
+        trade.getTradingWindow(2).addItem(item);
+        trade.getTradingWindow(2).addItem(notCurrency);
+
+        handler.balance();
+        assertEquals(1, trade.getTradingWindow(2).getAllItems().length);
+        assertEquals(1, trade.getTradingWindow(4).getAllItems().length);
+        assertNotEquals(Currency.MatchStatus.MATCHES, currency.matches(trade.getTradingWindow(2).getAllItems()[0]));
+        assertEquals(Currency.MatchStatus.MATCHES, currency.matches(trade.getTradingWindow(4).getAllItems()[0]));
+    }
+
+    @Test
+    void testOnlyMatchingRarityCurrencySucked() throws NoSuchTemplateException {
+        currency = new Currency(ItemList.log, -1, -1, (byte)-1, (byte)2, false);
+        CustomTraderDatabase.setCurrencyFor(trader, currency);
+        trade.end(trader, true);
+        resetTrade();
+
+        selectPrize();
+        Item item = factory.createNewItem(currency);
+        Item notCurrency = factory.createNewItem(currency);
+        notCurrency.setRarity((byte)1);
+        trade.getTradingWindow(2).addItem(item);
+        trade.getTradingWindow(2).addItem(notCurrency);
+
+        handler.balance();
+        assertEquals(1, trade.getTradingWindow(2).getAllItems().length);
+        assertEquals(1, trade.getTradingWindow(4).getAllItems().length);
+        assertNotEquals(Currency.MatchStatus.MATCHES, currency.matches(trade.getTradingWindow(2).getAllItems()[0]));
+        assertEquals(Currency.MatchStatus.MATCHES, currency.matches(trade.getTradingWindow(4).getAllItems()[0]));
+    }
+
+    @Test
+    void testOnlyFullWeightCurrencySucked() throws NoSuchTemplateException {
+        currency = new Currency(ItemList.log, -1, -1, (byte)-1, (byte)-1, true);
+        CustomTraderDatabase.setCurrencyFor(trader, currency);
+        trade.end(trader, true);
+        resetTrade();
+
+        selectPrize();
+        Item item = factory.createNewItem(currency);
+        Item notCurrency = factory.createNewItem(currency);
+        notCurrency.setWeight(currency.getTemplate().getWeightGrams() - 100, false);
+        trade.getTradingWindow(2).addItem(item);
+        trade.getTradingWindow(2).addItem(notCurrency);
+
+        handler.balance();
+        assertEquals(1, trade.getTradingWindow(2).getAllItems().length);
+        assertEquals(1, trade.getTradingWindow(4).getAllItems().length);
+        assertNotEquals(Currency.MatchStatus.MATCHES, currency.matches(trade.getTradingWindow(2).getAllItems()[0]));
+        assertEquals(Currency.MatchStatus.MATCHES, currency.matches(trade.getTradingWindow(4).getAllItems()[0]));
     }
 
     @Test
@@ -143,6 +254,23 @@ public class CurrencyTraderTradeHandlerTests extends CustomTraderTest {
 
         handler.balance();
         assertThat(player, receivedMessageContaining("demands 1 more medallion"));
+        assertFalse((boolean)ReflectionUtil.getPrivateField(trade, OtherTraderTrade.class.getDeclaredField("creatureTwoSatisfied")));
+    }
+
+    @Test
+    void testPositiveDiffSendsMessageAdvancedCurrency() throws NoSuchFieldException, IllegalAccessException, NoSuchTemplateException {
+        currency = new Currency(ItemList.log, -1, 10, Materials.MATERIAL_WOOD_APPLE, (byte)3, true);
+        CustomTraderDatabase.setCurrencyFor(trader, currency);
+        trade.end(trader, true);
+        resetTrade();
+        
+        selectPrize();
+        selectPrize();
+        Item item = factory.createNewItem(currency);
+        trade.getTradingWindow(2).addItem(item);
+
+        handler.balance();
+        assertThat(player, receivedMessageContaining("demands 1 more fantastic applewood log of exactly 10ql"));
         assertFalse((boolean)ReflectionUtil.getPrivateField(trade, OtherTraderTrade.class.getDeclaredField("creatureTwoSatisfied")));
     }
 

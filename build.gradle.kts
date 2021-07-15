@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "mod.wurmunlimited.npcs.customtrader"
-version = "0.3.4"
+version = "0.3.5"
 val shortName = "customtrader"
 val wurmServerFolder = "E:/Steam/steamapps/common/Wurm Unlimited/WurmServerLauncher/"
 
