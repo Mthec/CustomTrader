@@ -27,7 +27,7 @@ public class CurrencyTraderTradeHandlerTests extends CustomTraderTest {
     private Creature trader;
     private Player player;
     private Currency currency;
-    private CurrencyTraderTrade trade;
+    private CurrencyTraderTrade trade = null;
     private CurrencyTraderTradeHandler handler;
 
     @BeforeEach
@@ -50,6 +50,9 @@ public class CurrencyTraderTradeHandlerTests extends CustomTraderTest {
     
     private void resetTrade() {
         try {
+            if (trade != null) {
+                trade.end(trader, true);
+            }
             trade = new CurrencyTraderTrade(player, trader);
             player.setTrade(trade);
             trader.setTrade(trade);
@@ -353,5 +356,80 @@ public class CurrencyTraderTradeHandlerTests extends CustomTraderTest {
 
         assertThat(player, receivedMessageContaining("completed"));
         assertEquals(0, trader.getInventory().getItems().size());
+    }
+
+    @Test
+    void testMatchesWrongTemplate() throws NoSuchTemplateException {
+        Item item = factory.createNewItem(currency.templateId + 1);
+        resetTrade();
+        selectPrize();
+        trade.getTradingWindow(2).addItem(item);
+        handler.balance();
+        assertThat(player, receivedMessageContaining("I will only accept medallions"));
+    }
+
+    @Test
+    void testMatchesNotExactQL() {
+        Currency curr = new Currency(currency.getTemplate(), -1, 11, (byte)-1, (byte)-1, false);
+        CustomTraderDatabase.setCurrencyFor(trader, curr);
+        Item item = factory.createNewItem(curr);
+        item.setQualityLevel(10);
+        resetTrade();
+        selectPrize();
+        trade.getTradingWindow(2).addItem(item);
+        handler.balance();
+        assertThat(player, receivedMessageContaining("that are exactly 11ql"));
+    }
+
+    @Test
+    void testMatchesBelowMinQL() {
+        Currency curr = new Currency(currency.getTemplate(), 10, -1, (byte)-1, (byte)-1, false);
+        CustomTraderDatabase.setCurrencyFor(trader, curr);
+        Item item = factory.createNewItem(curr);
+        item.setQualityLevel(9.9f);
+        resetTrade();
+        selectPrize();
+        trade.getTradingWindow(2).addItem(item);
+        handler.balance();
+        assertThat(player, receivedMessageContaining("that are 10ql or greater"));
+    }
+
+    @Test
+    void testMatchesWrongMaterial() {
+        Currency curr = new Currency(currency.getTemplate(), -1, -1, Materials.MATERIAL_SILVER, (byte)-1, false);
+        CustomTraderDatabase.setCurrencyFor(trader, curr);
+        Item item = factory.createNewItem(curr);
+        item.setMaterial(Materials.MATERIAL_GOLD);
+        resetTrade();
+        selectPrize();
+        trade.getTradingWindow(2).addItem(item);
+        handler.balance();
+        assertThat(player, receivedMessageContaining("that are made of silver"));
+    }
+
+    @Test
+    void testMatchesWrongRarity() {
+        Currency curr = new Currency(currency.getTemplate(), -1, -1, (byte)-1, (byte)2, false);
+        CustomTraderDatabase.setCurrencyFor(trader, curr);
+        Item item = factory.createNewItem(curr);
+        item.setRarity((byte)3);
+        resetTrade();
+        selectPrize();
+        trade.getTradingWindow(2).addItem(item);
+        handler.balance();
+        assertThat(player, receivedMessageContaining("that are supreme"));
+    }
+
+    @Test
+    void testMatchesNotFullWeight() {
+        Currency curr = new Currency(currency.getTemplate(), -1, -1, (byte)-1, (byte)-1, true);
+        CustomTraderDatabase.setCurrencyFor(trader, curr);
+        Item item = factory.createNewItem(curr);
+        item.setWeight(1, false);
+        resetTrade();
+        selectPrize();
+        trade.getTradingWindow(2).addItem(item);
+        handler.balance();
+        assertThat(player, receivedMessageContaining("0.07kg"));
     }
 }

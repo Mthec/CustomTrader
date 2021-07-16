@@ -1,14 +1,17 @@
 package com.wurmonline.server.creatures;
 
 import com.wurmonline.server.items.Item;
+import com.wurmonline.server.items.Materials;
 import com.wurmonline.server.items.Trade;
 import com.wurmonline.server.items.TradingWindow;
 import com.wurmonline.server.questions.WeightHelper;
+import com.wurmonline.shared.util.MaterialUtilities;
 import mod.wurmunlimited.npcs.customtrader.Currency;
 import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
 import mod.wurmunlimited.npcs.customtrader.stock.StockInfo;
 import mod.wurmunlimited.npcs.customtrader.stock.StockItem;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -18,6 +21,7 @@ import java.util.logging.Logger;
 
 public class CurrencyTraderTradeHandler extends TradeHandler {
     private static final Logger logger = Logger.getLogger(CurrencyTraderTradeHandler.class.getName());
+    private static final DecimalFormat df = new DecimalFormat("0");
     private final Creature trader;
     private final Trade trade;
     private final Currency currency;
@@ -38,7 +42,7 @@ public class CurrencyTraderTradeHandler extends TradeHandler {
                 prices.add(info.item);
             }
 
-            trade.creatureOne.getCommunicator().sendSafeServerMessage(trader.getName() + " says 'I will trade each of my goods in exchange for " + currency.getPlural() + ".'");
+            trade.creatureOne.getCommunicator().sendSafeServerMessage(trader.getName() + " says 'I will trade my goods in exchange for " + currency.getPlural() + ".'");
             tempAborted = false;
         } else {
             logger.warning("Currency Trader currency was null when initiating trade.");
@@ -161,31 +165,31 @@ public class CurrencyTraderTradeHandler extends TradeHandler {
                     break;
                 case WRONG_TEMPLATE:
                     if (!sentMessages.contains(Currency.MatchStatus.WRONG_TEMPLATE)) {
-                        trade.creatureOne.getCommunicator().sendSafeServerMessage(trader.getName() + " says 'I will only accept " + currency.getName() + ".'");
+                        trade.creatureOne.getCommunicator().sendSafeServerMessage(trader.getName() + " says 'I will only accept " + currency.getPlural() + ".'");
                         sentMessages.add(Currency.MatchStatus.WRONG_TEMPLATE);
                     }
                     break;
                 case QL_TOO_LOW:
                     if (!sentMessages.contains(Currency.MatchStatus.QL_TOO_LOW)) {
-                        trade.creatureOne.getCommunicator().sendSafeServerMessage(trader.getName() + " says 'I will only accept " + currency.getTemplate().getPlural() + " that are " + currency.minQL + "ql or greater.'");
+                        trade.creatureOne.getCommunicator().sendSafeServerMessage(trader.getName() + " says 'I will only accept " + currency.getTemplate().getPlural() + " that are " + df.format(currency.minQL) + "ql or greater.'");
                         sentMessages.add(Currency.MatchStatus.QL_TOO_LOW);
                     }
                     break;
                 case QL_DOES_NOT_MATCH_EXACT:
                     if (!sentMessages.contains(Currency.MatchStatus.QL_DOES_NOT_MATCH_EXACT)) {
-                        trade.creatureOne.getCommunicator().sendSafeServerMessage(trader.getName() + " says 'I will only accept " + currency.getTemplate().getPlural() + " that are exactly " + currency.exactQL + "ql.'");
+                        trade.creatureOne.getCommunicator().sendSafeServerMessage(trader.getName() + " says 'I will only accept " + currency.getTemplate().getPlural() + " that are exactly " + df.format(currency.exactQL) + "ql.'");
                         sentMessages.add(Currency.MatchStatus.QL_DOES_NOT_MATCH_EXACT);
                     }
                     break;
                 case WRONG_MATERIAL:
                     if (!sentMessages.contains(Currency.MatchStatus.WRONG_MATERIAL)) {
-                        trade.creatureOne.getCommunicator().sendSafeServerMessage(trader.getName() + " says 'I will only accept " + currency.getTemplate().getPlural() + " that are made of " + currency.material + ".'");
+                        trade.creatureOne.getCommunicator().sendSafeServerMessage(trader.getName() + " says 'I will only accept " + currency.getTemplate().getPlural() + " that are made of " + Materials.convertMaterialByteIntoString(currency.material) + ".'");
                         sentMessages.add(Currency.MatchStatus.WRONG_MATERIAL);
                     }
                     break;
                 case WRONG_RARITY:
                     if (!sentMessages.contains(Currency.MatchStatus.WRONG_RARITY)) {
-                        trade.creatureOne.getCommunicator().sendSafeServerMessage(trader.getName() + " says 'I will only accept " + currency.getTemplate().getPlural() + " that are " + currency.rarity + ".'");
+                        trade.creatureOne.getCommunicator().sendSafeServerMessage(trader.getName() + " says 'I will only accept " + currency.getTemplate().getPlural() + " that are " + MaterialUtilities.getRarityString(currency.rarity) + ".'");
                         sentMessages.add(Currency.MatchStatus.WRONG_RARITY);
                     }
                     break;
