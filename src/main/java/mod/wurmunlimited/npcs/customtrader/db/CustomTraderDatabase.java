@@ -126,11 +126,11 @@ public class CustomTraderDatabase {
                 }
 
                 if (version == 1) {
-                    conn.prepareStatement("ALTER TABLE currency_traders ADD COLUMN minimum_ql REAL;").execute();
-                    conn.prepareStatement("ALTER TABLE currency_traders ADD COLUMN exact_ql REAL;").execute();
-                    conn.prepareStatement("ALTER TABLE currency_traders ADD COLUMN material INTEGER;").execute();
-                    conn.prepareStatement("ALTER TABLE currency_traders ADD COLUMN rarity INTEGER;").execute();
-                    conn.prepareStatement("ALTER TABLE currency_traders ADD COLUMN weight INTEGER;").execute();
+                    conn.prepareStatement("ALTER TABLE currency_traders ADD COLUMN minimum_ql REAL NOT NULL DEFAULT -1;").execute();
+                    conn.prepareStatement("ALTER TABLE currency_traders ADD COLUMN exact_ql REAL NOT NULL DEFAULT -1;").execute();
+                    conn.prepareStatement("ALTER TABLE currency_traders ADD COLUMN material INTEGER NOT NULL DEFAULT -1;").execute();
+                    conn.prepareStatement("ALTER TABLE currency_traders ADD COLUMN rarity INTEGER NOT NULL DEFAULT -1;").execute();
+                    conn.prepareStatement("ALTER TABLE currency_traders ADD COLUMN weight INTEGER NOT NULL DEFAULT 1;").execute();
                     conn.prepareStatement("PRAGMA user_version = 2;").execute();
                 }
             }

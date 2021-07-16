@@ -476,6 +476,11 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
                                                "currency INTEGER," +
                                                "tag TEXT" +
                                                ");").execute();
+            PreparedStatement ps = db.prepareStatement("INSERT INTO currency_traders (id, currency, tag) VALUES (?, ?, ?);");
+            ps.setLong(1, 1);
+            ps.setInt(2, 1);
+            ps.setString(3, "1");
+            ps.execute();
             db.prepareStatement("PRAGMA user_version = 0;").execute();
 
             assert !hasAuxColumn(db.prepareStatement("PRAGMA table_info('trader_stock')").executeQuery());
@@ -491,6 +496,17 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
             assertTrue(hasAuxColumn(db.prepareStatement("PRAGMA table_info('trader_stock');").executeQuery()));
             assertTrue(hasAuxColumn(db.prepareStatement("PRAGMA table_info('tag_stock');").executeQuery()));
             assertTrue(hasCurrencyColumns(db.prepareStatement("PRAGMA table_info('currency_traders');").executeQuery()));
+
+            ResultSet rs = db.prepareStatement("SELECT * FROM currency_traders;").executeQuery();
+            rs.next();
+            assertEquals(1, rs.getLong(1));
+            assertEquals(1, rs.getInt(2));
+            assertEquals("1", rs.getString(3));
+            assertEquals(-1, rs.getFloat(4));
+            assertEquals(-1, rs.getFloat(5));
+            assertEquals(-1, rs.getByte(6));
+            assertEquals(-1, rs.getByte(7));
+            assertTrue(rs.getBoolean(8));
         });
     }
 
