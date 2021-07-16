@@ -68,7 +68,7 @@ public abstract class CustomTraderTest {
             ReflectionUtil.setPrivateField(null, CustomTraderDatabase.class.getDeclaredField("created"), false);
 
             //noinspection ResultOfMethodCallIgnored
-            Files.walk(Paths.get(".")).filter(it -> it.getFileName().toString().startsWith("beast_summoner") && it.getFileName().toString().endsWith("log"))
+            Files.walk(Paths.get(".")).filter(it -> it.getFileName().toString().startsWith("othertrader") && it.getFileName().toString().endsWith("log"))
                     .forEach(it -> it.toFile().delete());
         } catch (Exception e) {
             throw new RuntimeException(e);
