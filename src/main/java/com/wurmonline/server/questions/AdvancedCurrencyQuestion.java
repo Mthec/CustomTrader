@@ -123,6 +123,7 @@ public class AdvancedCurrencyQuestion extends CustomTraderQuestionExtension {
 
             if (!reshowStage) {
                 CustomTraderDatabase.setCurrencyFor(trader, new Currency(template, newMinQL, newExactQL, newMaterial, rarity, weight == template.getWeightGrams()));
+                responder.getCommunicator().sendNormalServerMessage("You successfully update " + trader.getName() + "'s currency.");
                 return;
             }
 
@@ -167,11 +168,12 @@ public class AdvancedCurrencyQuestion extends CustomTraderQuestionExtension {
                              .newLine()
                              .harray(b -> b.label("Material").spacer().dropdown("mat", "any," + materials.getOptions(), details.materialIndex))
                              .newLine()
-                             .harray(b -> b.label("Exact Quality Level").spacer().entry("exact_ql", df.format(exactQL), 4))
+                             .harray(b -> b.label("Exact Quality Level").spacer().entry("exact_ql", exactQL == -1 ? "" : df.format(exactQL), 4))
                              .text("- or -")
-                             .harray(b -> b.label("Minimum Quality Level").spacer().entry("min_ql", df.format(minQL), 4))
+                             .harray(b -> b.label("Minimum Quality Level").spacer().entry("min_ql", minQL == -1 ? "" : df.format(minQL), 4))
                              .newLine()
                              .harray(b -> b.spacer()
+                                           .radio("rarity", "-1", "Any", details.rarity == -1).spacer()
                                            .radio("rarity", "0", "None", details.rarity == 0).spacer()
                                            .radio("rarity", "1", "Rare", details.rarity == 1).spacer()
                                            .radio("rarity", "2", "Supreme", details.rarity == 2).spacer()
@@ -183,6 +185,6 @@ public class AdvancedCurrencyQuestion extends CustomTraderQuestionExtension {
                                            .button("cancel", "Cancel"))
                              .build();
 
-        getResponder().getCommunicator().sendBml(300, 400, true, true, bml, 200, 200, 200, title);
+        getResponder().getCommunicator().sendBml(350, 300, true, true, bml, 200, 200, 200, title);
     }
 }
