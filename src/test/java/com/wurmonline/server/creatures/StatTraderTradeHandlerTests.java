@@ -1,7 +1,7 @@
 package com.wurmonline.server.creatures;
 
+import com.wurmonline.server.items.BaseTrade;
 import com.wurmonline.server.items.Item;
-import com.wurmonline.server.items.OtherTraderTrade;
 import com.wurmonline.server.items.StatTraderTrade;
 import com.wurmonline.server.items.TradingWindow;
 import com.wurmonline.server.players.Player;
@@ -101,10 +101,10 @@ public class StatTraderTradeHandlerTests extends CustomTraderTest {
         player.setKarma(0);
         selectPrize();
 
-        assertFalse((boolean)ReflectionUtil.getPrivateField(trade, OtherTraderTrade.class.getDeclaredField("creatureTwoSatisfied")));
+        assertFalse((boolean)ReflectionUtil.getPrivateField(trade, BaseTrade.class.getDeclaredField("creatureTwoSatisfied")));
         player.setKarma(1);
         handler.balance();
-        assertTrue((boolean)ReflectionUtil.getPrivateField(trade, OtherTraderTrade.class.getDeclaredField("creatureTwoSatisfied")));
+        assertTrue((boolean)ReflectionUtil.getPrivateField(trade, BaseTrade.class.getDeclaredField("creatureTwoSatisfied")));
     }
 
     @Test
@@ -167,7 +167,7 @@ public class StatTraderTradeHandlerTests extends CustomTraderTest {
         handler.balance();
 
         assertThat(player, receivedMessageContaining("demands 1 more Karma"));
-        assertFalse((boolean)ReflectionUtil.getPrivateField(trade, OtherTraderTrade.class.getDeclaredField("creatureTwoSatisfied")));
+        assertFalse((boolean)ReflectionUtil.getPrivateField(trade, BaseTrade.class.getDeclaredField("creatureTwoSatisfied")));
     }
 
     @Test

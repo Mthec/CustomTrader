@@ -5,9 +5,11 @@ import com.wurmonline.server.behaviours.PlaceCurrencyTraderAction;
 import com.wurmonline.server.behaviours.PlaceCustomTraderAction;
 import com.wurmonline.server.behaviours.PlaceNpcMenu;
 import com.wurmonline.server.behaviours.PlaceStatTraderAction;
+import com.wurmonline.server.creatures.CustomTraderTradeHandler;
 import com.wurmonline.server.questions.ModelOption;
 import mod.wurmunlimited.npcs.FaceSetter;
 import mod.wurmunlimited.npcs.ModelSetter;
+import mod.wurmunlimited.npcs.TradeSetup;
 import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
 import mod.wurmunlimited.npcs.customtrader.stats.Stat;
 import org.gotti.wurmunlimited.modloader.ReflectionUtil;
@@ -17,6 +19,8 @@ import org.junit.jupiter.api.BeforeEach;
 
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Objects;
 
@@ -35,6 +39,7 @@ public abstract class CustomTraderTest {
             new PlaceCurrencyTraderAction();
             new PlaceStatTraderAction();
             menu = PlaceNpcMenu.register();
+            TradeSetup.addTrader(new CustomTraderMod()::isSpecialTrader, CustomTraderTradeHandler::create);
             init = true;
         }
 
@@ -61,6 +66,10 @@ public abstract class CustomTraderTest {
 
         try {
             ReflectionUtil.setPrivateField(null, CustomTraderDatabase.class.getDeclaredField("created"), false);
+
+            //noinspection ResultOfMethodCallIgnored
+            Files.walk(Paths.get(".")).filter(it -> it.getFileName().toString().startsWith("beast_summoner") && it.getFileName().toString().endsWith("log"))
+                    .forEach(it -> it.toFile().delete());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

@@ -17,6 +17,7 @@ dependencies {
     implementation(project(":BMLBuilder"))
     implementation(project(":PlaceNpc"))
     implementation(project(":CreatureCustomiser"))
+    implementation(project(":TradeLibrary"))
     implementation("com.wurmonline:server:1.9")
     implementation("org.gotti.wurmunlimited:server-modlauncher:0.45")
 }
@@ -42,6 +43,7 @@ tasks {
         from(configurations.runtimeClasspath.get().filter { it.name.startsWith("BMLBuilder") && it.name.endsWith("jar") }.map { zipTree(it) })
         from(configurations.runtimeClasspath.get().filter { it.name.startsWith("PlaceNpc") && it.name.endsWith("jar") }.map { zipTree(it) })
         from(configurations.runtimeClasspath.get().filter { it.name.startsWith("CreatureCustomiser") && it.name.endsWith("jar") }.map { zipTree(it) })
+        from(configurations.runtimeClasspath.get().filter { it.name.startsWith("TradeLibrary") && it.name.endsWith("jar") }.map { zipTree(it) })
 
         includeEmptyDirs = false
         archiveFileName.set("$shortName.jar")

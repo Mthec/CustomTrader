@@ -75,9 +75,9 @@ public class CurrencyTraderTradeHandlerTests extends CustomTraderTest {
         Item item = factory.createNewItem(currency);
         trade.getTradingWindow(4).addItem(item);
 
-        assertFalse((boolean)ReflectionUtil.getPrivateField(trade, OtherTraderTrade.class.getDeclaredField("creatureTwoSatisfied")));
+        assertFalse((boolean)ReflectionUtil.getPrivateField(trade, BaseTrade.class.getDeclaredField("creatureTwoSatisfied")));
         handler.balance();
-        assertTrue((boolean)ReflectionUtil.getPrivateField(trade, OtherTraderTrade.class.getDeclaredField("creatureTwoSatisfied")));
+        assertTrue((boolean)ReflectionUtil.getPrivateField(trade, BaseTrade.class.getDeclaredField("creatureTwoSatisfied")));
     }
 
     @Test
@@ -100,7 +100,7 @@ public class CurrencyTraderTradeHandlerTests extends CustomTraderTest {
         CustomTraderDatabase.setCurrencyFor(trader, currency);
         trade.end(trader, true);
         resetTrade();
-        
+
         selectPrize();
         Item item = factory.createNewItem(currency);
         Item notCurrency = factory.createNewItem(currency);
@@ -254,7 +254,7 @@ public class CurrencyTraderTradeHandlerTests extends CustomTraderTest {
 
         handler.balance();
         assertThat(player, receivedMessageContaining("demands 1 more medallion"));
-        assertFalse((boolean)ReflectionUtil.getPrivateField(trade, OtherTraderTrade.class.getDeclaredField("creatureTwoSatisfied")));
+        assertFalse((boolean)ReflectionUtil.getPrivateField(trade, BaseTrade.class.getDeclaredField("creatureTwoSatisfied")));
     }
 
     @Test
@@ -263,7 +263,7 @@ public class CurrencyTraderTradeHandlerTests extends CustomTraderTest {
         CustomTraderDatabase.setCurrencyFor(trader, currency);
         trade.end(trader, true);
         resetTrade();
-        
+
         selectPrize();
         selectPrize();
         Item item = factory.createNewItem(currency);
@@ -271,7 +271,7 @@ public class CurrencyTraderTradeHandlerTests extends CustomTraderTest {
 
         handler.balance();
         assertThat(player, receivedMessageContaining("demands 1 more fantastic applewood log of exactly 10ql"));
-        assertFalse((boolean)ReflectionUtil.getPrivateField(trade, OtherTraderTrade.class.getDeclaredField("creatureTwoSatisfied")));
+        assertFalse((boolean)ReflectionUtil.getPrivateField(trade, BaseTrade.class.getDeclaredField("creatureTwoSatisfied")));
     }
 
     @Test
@@ -286,7 +286,7 @@ public class CurrencyTraderTradeHandlerTests extends CustomTraderTest {
         assertThat(player, didNotReceiveMessageContaining("demands"));
         assertEquals(1, trade.getTradingWindow(2).getAllItems().length);
         assertEquals(1, trade.getTradingWindow(4).getAllItems().length);
-        assertTrue((boolean)ReflectionUtil.getPrivateField(trade, OtherTraderTrade.class.getDeclaredField("creatureTwoSatisfied")));
+        assertTrue((boolean)ReflectionUtil.getPrivateField(trade, BaseTrade.class.getDeclaredField("creatureTwoSatisfied")));
     }
 
     @Test
@@ -299,7 +299,7 @@ public class CurrencyTraderTradeHandlerTests extends CustomTraderTest {
         assertThat(player, didNotReceiveMessageContaining("demands"));
         assertEquals(1, trade.getTradingWindow(3).getAllItems().length);
         assertEquals(1, trade.getTradingWindow(4).getAllItems().length);
-        assertTrue((boolean)ReflectionUtil.getPrivateField(trade, OtherTraderTrade.class.getDeclaredField("creatureTwoSatisfied")));
+        assertTrue((boolean)ReflectionUtil.getPrivateField(trade, BaseTrade.class.getDeclaredField("creatureTwoSatisfied")));
     }
 
     @Test

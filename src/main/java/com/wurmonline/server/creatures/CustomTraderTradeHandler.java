@@ -5,6 +5,8 @@ import com.wurmonline.server.economy.Economy;
 import com.wurmonline.server.items.Item;
 import com.wurmonline.server.items.Trade;
 import com.wurmonline.server.items.TradingWindow;
+import mod.wurmunlimited.npcs.customtrader.CurrencyTraderTemplate;
+import mod.wurmunlimited.npcs.customtrader.CustomTraderTemplate;
 
 import java.util.Arrays;
 import java.util.logging.Level;
@@ -107,6 +109,16 @@ public class CustomTraderTradeHandler extends TradeHandler {
             if (item.isCoin()) {
                 sellWindow.removeItem(item);
             }
+        }
+    }
+
+    public static TradeHandler create(Creature creature, Trade trade) {
+        if (CustomTraderTemplate.isCustomTrader(creature)) {
+            return new CustomTraderTradeHandler(creature, trade);
+        } else if (CurrencyTraderTemplate.isCurrencyTrader(creature)) {
+            return new CurrencyTraderTradeHandler(creature, trade);
+        } else {
+            return new StatTraderTradeHandler(creature, trade);
         }
     }
 }

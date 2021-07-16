@@ -7,6 +7,7 @@ import com.wurmonline.server.items.Trade;
 import com.wurmonline.server.players.Player;
 import com.wurmonline.server.questions.CreatureCreationQuestion;
 import com.wurmonline.server.questions.Question;
+import mod.wurmunlimited.npcs.TradeSetup;
 import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
 import mod.wurmunlimited.npcs.customtrader.stock.Enchantment;
 import mod.wurmunlimited.npcs.customtrader.stock.StockInfo;
@@ -190,7 +191,8 @@ public class CustomTraderModTests extends CustomTraderTest {
         Creature currencyTrader = factory.createNewCurrencyTrader();
         Creature statTrader = factory.createNewStatTrader();
 
-        InvocationHandler handler = new CustomTraderMod()::getTradeHandler;
+
+        InvocationHandler handler = (o, method, args) -> ReflectionUtil.callPrivateMethod(null, TradeSetup.class.getDeclaredMethod("getTradeHandler", Object.class, Method.class, Object[].class), o, method, args);
         Method method = mock(Method.class);
         Object[] args = new Object[0];
         customTrader.setTrade(new Trade(factory.createNewPlayer(), customTrader));
