@@ -37,7 +37,7 @@ public class AdvancedCurrencyQuestion extends CustomTraderQuestionExtension {
                 materialIndex += 1;
             }
         }
-        details = new Details(0f, materialIndex, currentCurrency.rarity, 0, currentCurrency.onlyFullWeight ? template.getWeightGrams() : 0, currentCurrency.material);
+        details = new Details(0f, materialIndex, currentCurrency.rarity, 0, currentCurrency.onlyFullWeight ? template.getWeightGrams() : 0, currentCurrency.material, "");
         exactQL = currentCurrency.exactQL;
         minQL = currentCurrency.minQL;
     }
@@ -127,7 +127,7 @@ public class AdvancedCurrencyQuestion extends CustomTraderQuestionExtension {
                 return;
             }
 
-            new AdvancedCurrencyQuestion(responder, trader, template, new Details(0f, materialIndex, rarity, 0, weight, (byte)0), exactQL, minQL).sendQuestion();
+            new AdvancedCurrencyQuestion(responder, trader, template, new Details(0f, materialIndex, rarity, 0, weight, (byte)0, ""), exactQL, minQL).sendQuestion();
         } else if (wasSelected("back")) {
             new CurrencyTraderManagementQuestion(responder, trader).sendQuestion();
         }

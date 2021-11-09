@@ -21,6 +21,9 @@ import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Objects;
 
@@ -29,6 +32,8 @@ public abstract class CustomTraderTest {
     protected CustomTraderObjectsFactory factory;
     private static boolean init = false;
     protected static PlaceNpcMenu menu;
+    private static final String dbString = "jdbc:sqlite:file::memory:?cache=shared";
+    private static Connection db;
 
     @BeforeEach
     protected void setUp() throws Exception {
@@ -43,6 +48,10 @@ public abstract class CustomTraderTest {
             init = true;
         }
 
+        ReflectionUtil.setPrivateField(null, CustomTraderDatabase.class.getDeclaredField("dbString"), dbString);
+        db = DriverManager.getConnection(dbString);
+        ReflectionUtil.callPrivateMethod(null, CustomTraderDatabase.class.getDeclaredMethod("init"));
+
         ReflectionUtil.<List<FaceSetter>>getPrivateField(null, FaceSetter.class.getDeclaredField("faceSetters")).clear();
         ReflectionUtil.<List<ModelSetter>>getPrivateField(null, ModelSetter.class.getDeclaredField("modelSetters")).clear();
 
@@ -53,6 +62,13 @@ public abstract class CustomTraderTest {
     }
 
     private static void cleanUp() {
+        try {
+            if (db != null) {
+                db.close();
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
         File file = new File("sqlite/customtrader.db");
         if (file.exists()) {
             //noinspection ResultOfMethodCallIgnored

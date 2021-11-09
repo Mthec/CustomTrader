@@ -51,7 +51,7 @@ public class RestockTests extends CustomTraderTest {
     void testItemAddedIfListedUnique() throws CustomTraderDatabase.StockUpdateException {
         Creature trader = factory.createNewCustomTrader();
 
-        CustomTraderDatabase.addStockItemTo(trader, num, num, num, b, b, num, new Enchantment[0], (byte)0, num, num, num);
+        CustomTraderDatabase.addStockItemTo(trader, num, num, num, b, b, num, new Enchantment[0], (byte)0, "", num, num, num);
         CustomTraderDatabase.restock(trader);
 
         assertEquals(num, trader.getInventory().getItems().size());
@@ -63,7 +63,7 @@ public class RestockTests extends CustomTraderTest {
         String tag = "test";
         Creature trader = factory.createNewCustomTrader(tag);
 
-        CustomTraderDatabase.addStockItemTo(tag, num, num, num, b, b, num, new Enchantment[0], (byte)0, num, num, num);
+        CustomTraderDatabase.addStockItemTo(tag, num, num, num, b, b, num, new Enchantment[0], (byte)0, "", num, num, num);
         CustomTraderDatabase.restock(trader);
 
         assertEquals(num, trader.getInventory().getItems().size());
@@ -74,7 +74,7 @@ public class RestockTests extends CustomTraderTest {
     void testOnlyMaxNumItemsAllowed() throws CustomTraderDatabase.StockUpdateException {
         Creature trader = factory.createNewCustomTrader();
 
-        CustomTraderDatabase.addStockItemTo(trader, num, num, num, b, b, num, new Enchantment[0], (byte)0, num, num, num);
+        CustomTraderDatabase.addStockItemTo(trader, num, num, num, b, b, num, new Enchantment[0], (byte)0, "", num, num, num);
         Item firstItem = factory.createNewItem(num);
         firstItem.setQualityLevel(num);
         firstItem.setPrice(num);
@@ -93,8 +93,8 @@ public class RestockTests extends CustomTraderTest {
     void testMixedNumberOfItemsToRestock() throws CustomTraderDatabase.StockUpdateException {
         Creature trader = factory.createNewCustomTrader();
 
-        CustomTraderDatabase.addStockItemTo(trader, num, num, num, b, b, num, new Enchantment[0], (byte)0, 10, num, 0);
-        CustomTraderDatabase.addStockItemTo(trader, num + 1, num, num, b, b, num, new Enchantment[0], (byte)0, 7, num, 0);
+        CustomTraderDatabase.addStockItemTo(trader, num, num, num, b, b, num, new Enchantment[0], (byte)0, "", 10, num, 0);
+        CustomTraderDatabase.addStockItemTo(trader, num + 1, num, num, b, b, num, new Enchantment[0], (byte)0, "", 7, num, 0);
 
         CustomTraderDatabase.restock(trader);
         CustomTraderDatabase.restock(trader);
@@ -106,7 +106,7 @@ public class RestockTests extends CustomTraderTest {
     void testNoOtherItemsRemoved() throws CustomTraderDatabase.StockUpdateException {
         Creature trader = factory.createNewCustomTrader();
 
-        CustomTraderDatabase.addStockItemTo(trader, num, num, num, b, b, num, new Enchantment[0], (byte)0, num, num, num);
+        CustomTraderDatabase.addStockItemTo(trader, num, num, num, b, b, num, new Enchantment[0], (byte)0, "", num, num, num);
         Item firstItem = factory.createNewItem(num + 1);
         trader.getInventory().insertItem(firstItem);
 
@@ -120,7 +120,7 @@ public class RestockTests extends CustomTraderTest {
     void testItemsRestockedAtProperRate() throws CustomTraderDatabase.StockUpdateException {
         Creature trader = factory.createNewCustomTrader();
 
-        CustomTraderDatabase.addStockItemTo(trader, num, num, num, b, b, num, new Enchantment[0], (byte)0, num, 1, 0);
+        CustomTraderDatabase.addStockItemTo(trader, num, num, num, b, b, num, new Enchantment[0], (byte)0, "", num, 1, 0);
 
         for (int i = 1; i <= 5; ++i) {
             CustomTraderDatabase.restock(trader);
@@ -135,7 +135,7 @@ public class RestockTests extends CustomTraderTest {
         Creature trader = factory.createNewCustomTrader();
         int maxStock = 5;
 
-        CustomTraderDatabase.addStockItemTo(trader, num, num, num, b, b, num, new Enchantment[0], (byte)0, maxStock, 2, 0);
+        CustomTraderDatabase.addStockItemTo(trader, num, num, num, b, b, num, new Enchantment[0], (byte)0, "", maxStock, 2, 0);
 
         for (int i = 2; i <= maxStock; i += 2) {
             CustomTraderDatabase.restock(trader);
@@ -151,7 +151,7 @@ public class RestockTests extends CustomTraderTest {
     void testItemsRestockedImmediatelyIfIntervalIsZero() throws CustomTraderDatabase.StockUpdateException {
         Creature trader = factory.createNewCustomTrader();
 
-        CustomTraderDatabase.addStockItemTo(trader, num, num, num, b, b, num, new Enchantment[0], (byte)0, num, 1, 0);
+        CustomTraderDatabase.addStockItemTo(trader, num, num, num, b, b, num, new Enchantment[0], (byte)0, "", num, 1, 0);
 
         for (int i = 1; i <= 5; ++i) {
             CustomTraderDatabase.restock(trader);
@@ -166,7 +166,7 @@ public class RestockTests extends CustomTraderTest {
         Creature trader = factory.createNewCustomTrader();
         int time = 100;
 
-        CustomTraderDatabase.addStockItemTo(trader, num, num, num, b, b, num, new Enchantment[0], (byte)0, num, 1, 100);
+        CustomTraderDatabase.addStockItemTo(trader, num, num, num, b, b, num, new Enchantment[0], (byte)0, "", num, 1, 100);
 
         CustomTraderDatabase.restock(trader);
         assertEquals(1, trader.getInventory().getItems().size());
@@ -188,7 +188,7 @@ public class RestockTests extends CustomTraderTest {
         enchantments.put("Flaming Aura", new Enchantment(Spells.getSpell(277), 20f));
         enchantments.put("Wind of Ages", new Enchantment(Spells.getSpell(279), 30f));
 
-        CustomTraderDatabase.addStockItemTo(trader, num, num, num, b, b, num, enchantments.values().toArray(new Enchantment[0]), (byte)0, num, num, num);
+        CustomTraderDatabase.addStockItemTo(trader, num, num, num, b, b, num, enchantments.values().toArray(new Enchantment[0]), (byte)0, "", num, num, num);
 
         CustomTraderDatabase.restock(trader);
 
@@ -207,7 +207,7 @@ public class RestockTests extends CustomTraderTest {
     void testFullyRestockUnique() throws CustomTraderDatabase.StockUpdateException {
         Creature trader = factory.createNewCustomTrader();
 
-        CustomTraderDatabase.addStockItemTo(trader, num, num, num, b, b, num, new Enchantment[0], (byte)0, num, 1, num);
+        CustomTraderDatabase.addStockItemTo(trader, num, num, num, b, b, num, new Enchantment[0], (byte)0, "", num, 1, num);
         CustomTraderDatabase.fullyStock(trader);
 
         assertEquals(num, trader.getInventory().getItems().size());
@@ -219,7 +219,7 @@ public class RestockTests extends CustomTraderTest {
         String tag = "testTag";
         Creature trader = factory.createNewCustomTrader(tag);
 
-        CustomTraderDatabase.addStockItemTo(tag, num, num, num, b, b, num, new Enchantment[0], (byte)0, num, 1, num);
+        CustomTraderDatabase.addStockItemTo(tag, num, num, num, b, b, num, new Enchantment[0], (byte)0, "", num, 1, num);
         CustomTraderDatabase.fullyStock(trader);
 
         assertEquals(num, trader.getInventory().getItems().size());
@@ -230,7 +230,7 @@ public class RestockTests extends CustomTraderTest {
     void testFullyRestockDoesNotOverstock() throws CustomTraderDatabase.StockUpdateException {
         Creature trader = factory.createNewCustomTrader();
 
-        CustomTraderDatabase.addStockItemTo(trader, num, num, num, b, b, num, new Enchantment[0], (byte)0, num, 1, num);
+        CustomTraderDatabase.addStockItemTo(trader, num, num, num, b, b, num, new Enchantment[0], (byte)0, "", num, 1, num);
         CustomTraderDatabase.fullyStock(trader);
         CustomTraderDatabase.fullyStock(trader);
 

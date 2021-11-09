@@ -1,6 +1,5 @@
-package mod.wurmunlimited.npcs.customtrader;
+package mod.wurmunlimited.npcs.customtrader.db;
 
-import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
 import org.gotti.wurmunlimited.modloader.ReflectionUtil;
 
 import java.lang.reflect.InvocationTargetException;

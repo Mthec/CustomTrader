@@ -46,7 +46,7 @@ public class CustomTraderModTests extends CustomTraderTest {
 
     @Test
     void testPollAlive() throws Throwable {
-        CustomTraderDatabase.addStockItemTo(customTrader, num, num, num, b, b, num, new Enchantment[0], (byte)0, num, num, 0);
+        CustomTraderDatabase.addStockItemTo(customTrader, num, num, num, b, b, num, new Enchantment[0], (byte)0, "", num, num, 0);
 
         InvocationHandler handler = new CustomTraderMod()::poll;
         Method method = mock(Method.class);
@@ -65,7 +65,7 @@ public class CustomTraderModTests extends CustomTraderTest {
 
     @Test
     void testPollDead() throws Throwable {
-        CustomTraderDatabase.addStockItemTo(customTrader, num, num, num, b, b, num, new Enchantment[0], (byte)0, num, num, 0);
+        CustomTraderDatabase.addStockItemTo(customTrader, num, num, num, b, b, num, new Enchantment[0], (byte)0, "", num, num, 0);
 
         InvocationHandler handler = new CustomTraderMod()::poll;
         Method method = mock(Method.class);
@@ -84,7 +84,7 @@ public class CustomTraderModTests extends CustomTraderTest {
 
     @Test
     void testPollItemsOnCustomTraderPreventDecay() throws Throwable {
-        CustomTraderDatabase.addStockItemTo(customTrader, ItemList.casserole, num, num, b, b, num, new Enchantment[0], (byte)0, num, num, 0);
+        CustomTraderDatabase.addStockItemTo(customTrader, ItemList.casserole, num, num, b, b, num, new Enchantment[0], (byte)0, "", num, num, 0);
         CustomTraderDatabase.restock(customTrader);
 
         CustomTraderMod mod = new CustomTraderMod();
@@ -111,7 +111,7 @@ public class CustomTraderModTests extends CustomTraderTest {
 
     @Test
     void testPollItemsOnCustomTraderNotPreventDecay() throws Throwable {
-        CustomTraderDatabase.addStockItemTo(customTrader, ItemList.casserole, num, num, b, b, num, new Enchantment[0], (byte)0, num, num, 0);
+        CustomTraderDatabase.addStockItemTo(customTrader, ItemList.casserole, num, num, b, b, num, new Enchantment[0], (byte)0, "", num, num, 0);
         CustomTraderDatabase.restock(customTrader);
 
         CustomTraderMod mod = new CustomTraderMod();
@@ -138,7 +138,7 @@ public class CustomTraderModTests extends CustomTraderTest {
 
     @Test
     void testMakeTradeComplete() throws Throwable {
-        CustomTraderDatabase.addStockItemTo(customTrader, num, num, num, b, b, num, new Enchantment[0], (byte)0, num, num, 0);
+        CustomTraderDatabase.addStockItemTo(customTrader, num, num, num, b, b, num, new Enchantment[0], (byte)0, "", num, num, 0);
         customTrader.getShop().setMoney(100);
         normalTrader.getShop().setMoney(100);
 
@@ -163,7 +163,7 @@ public class CustomTraderModTests extends CustomTraderTest {
 
     @Test
     void testMakeTradeNotComplete() throws Throwable {
-        CustomTraderDatabase.addStockItemTo(customTrader, num, num, num, b, b, num, new Enchantment[0], (byte)0, num, num, 0);
+        CustomTraderDatabase.addStockItemTo(customTrader, num, num, num, b, b, num, new Enchantment[0], (byte)0, "", num, num, 0);
         customTrader.getShop().setMoney(100);
         normalTrader.getShop().setMoney(100);
 

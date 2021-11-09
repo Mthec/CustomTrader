@@ -31,9 +31,9 @@ public class HelperTests extends CustomTraderTest {
         Item itemC1 = factory.createNewItem(14);
         Item itemC2 = factory.createNewItem(14);
         Item itemC3 = factory.createNewItem(14);
-        StockItem stockA = new StockItem(itemA.getTemplateId(), itemA.getQualityLevel(), itemA.getPrice(), itemA.getMaterial(), itemA.getRarity(), itemA.getWeightGrams(), new Enchantment[0], (byte)0);
-        StockItem stockB = new StockItem(itemB1.getTemplateId(), itemB1.getQualityLevel(), itemB1.getPrice(), itemB1.getMaterial(), itemB1.getRarity(), itemB1.getWeightGrams(), new Enchantment[0], (byte)0);
-        StockItem stockC = new StockItem(itemC1.getTemplateId(), itemC1.getQualityLevel(), itemC1.getPrice(), itemC1.getMaterial(), itemC1.getRarity(), itemC1.getWeightGrams(), new Enchantment[0], (byte)0);
+        StockItem stockA = new StockItem(itemA.getTemplateId(), itemA.getQualityLevel(), itemA.getPrice(), itemA.getMaterial(), itemA.getRarity(), itemA.getWeightGrams(), new Enchantment[0], (byte)0, "");
+        StockItem stockB = new StockItem(itemB1.getTemplateId(), itemB1.getQualityLevel(), itemB1.getPrice(), itemB1.getMaterial(), itemB1.getRarity(), itemB1.getWeightGrams(), new Enchantment[0], (byte)0, "");
+        StockItem stockC = new StockItem(itemC1.getTemplateId(), itemC1.getQualityLevel(), itemC1.getPrice(), itemC1.getMaterial(), itemC1.getRarity(), itemC1.getWeightGrams(), new Enchantment[0], (byte)0, "");
         trader.getInventory().insertItem(itemA);
         trader.getInventory().insertItem(itemB1);
         trader.getInventory().insertItem(itemB2);

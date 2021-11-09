@@ -1,5 +1,6 @@
 package mod.wurmunlimited.npcs.customtrader.stock;
 
+import com.wurmonline.server.items.InscriptionData;
 import com.wurmonline.server.items.Item;
 
 import java.util.Arrays;
@@ -13,8 +14,9 @@ public class StockItem {
     public final int weight;
     public final Enchantment[] enchantments;
     public final byte aux;
+    public final String inscription;
 
-    public StockItem(int templateId, float ql, int price, byte material, byte rarity, int weight, Enchantment[] enchantments, byte aux) {
+    public StockItem(int templateId, float ql, int price, byte material, byte rarity, int weight, Enchantment[] enchantments, byte aux, String inscription) {
         this.templateId = templateId;
         this.ql = ql;
         this.price = price;
@@ -23,6 +25,7 @@ public class StockItem {
         this.weight = weight;
         this.enchantments = enchantments;
         this.aux = aux;
+        this.inscription = inscription;
     }
 
     public boolean matches(Item item) {
@@ -32,7 +35,17 @@ public class StockItem {
                        item.getRarity() == rarity &&
                        item.getWeightGrams() == weight &&
                        Arrays.equals(Enchantment.parseEnchantments(item), enchantments) &&
-                       item.getAuxData() == aux;
+                       item.getAuxData() == aux &&
+                       (!item.canHaveInscription() || getInscription(item).equals(inscription));
+    }
+
+    public static String getInscription(Item item) {
+        InscriptionData data = item.getInscription();
+        if (data != null) {
+            return data.getInscription();
+        } else {
+            return "";
+        }
     }
 
     @Override
@@ -46,6 +59,7 @@ public class StockItem {
         result = 31 * result + weight;
         result = 31 * result + Arrays.hashCode(enchantments);
         result = 31 * result + (int)aux;
+        result = 31 * result + inscription.hashCode();
 
         return result;
     }
@@ -61,7 +75,8 @@ public class StockItem {
                    item.rarity == rarity &&
                    item.weight == weight &&
                    Arrays.equals(item.enchantments, enchantments) &&
-                   item.aux == aux;
+                   item.aux == aux &&
+                   item.inscription.equals(inscription);
         }
 
         return super.equals(obj);

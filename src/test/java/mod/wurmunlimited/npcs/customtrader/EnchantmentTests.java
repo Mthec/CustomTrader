@@ -32,7 +32,7 @@ public class EnchantmentTests extends CustomTraderTest {
             allSpells.put(spell, power);
             CustomTraderDatabase.addStockItemTo(trader, 1, 1, 1, (byte)0, (byte)0, 1, new Enchantment[] {
                     new Enchantment(spell, power)
-            }, (byte)0, 1, 1, 0);
+            }, (byte)0, "", 1, 1, 0);
         }
 
         CustomTraderDatabase.restock(trader);

@@ -10,6 +10,7 @@ import com.wurmonline.server.creatures.NoSuchCreatureException;
 import com.wurmonline.server.items.*;
 import com.wurmonline.server.spells.SpellEffect;
 import com.wurmonline.shared.exceptions.WurmServerException;
+import mod.wurmunlimited.npcs.customtrader.Currency;
 import mod.wurmunlimited.npcs.customtrader.*;
 import mod.wurmunlimited.npcs.customtrader.stats.Stat;
 import mod.wurmunlimited.npcs.customtrader.stats.StatFactory;
@@ -22,10 +23,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 import java.sql.*;
 import java.time.Clock;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
@@ -58,81 +56,166 @@ public class CustomTraderDatabase {
         }
     }
 
-    private static void init(Connection conn) throws SQLException {
-        PreparedStatement ps = conn.prepareStatement("CREATE TABLE IF NOT EXISTS traders (" +
-                                                             "id INTEGER UNIQUE," +
-                                                             "tag TEXT" +
-                                                             ");");
-        ps.execute();
-        ps = conn.prepareStatement("CREATE TABLE IF NOT EXISTS currency_traders (" +
-                                           "id INTEGER UNIQUE," +
-                                           "currency INTEGER," +
-                                           "tag TEXT" +
-                                           ");");
-        ps.execute();
-        ps = conn.prepareStatement("CREATE TABLE IF NOT EXISTS stat_traders (" +
-                                           "id INTEGER UNIQUE," +
-                                           "stat TEXT," +
-                                           "ratio REAL," +
-                                           "tag TEXT" +
-                                           ");");
-        ps.execute();
-        ps = conn.prepareStatement("CREATE TABLE IF NOT EXISTS trader_stock (" +
-                                           "trader_id INTEGER," +
-                                           "template_id INTEGER," +
-                                           "ql REAL," +
-                                           "price INTEGER," +
-                                           "material INTEGER," +
-                                           "rarity INTEGER," +
-                                           "weight INTEGER," +
-                                           "enchantments TEXT," +
-                                           "max_num INTEGER," +
-                                           "restock_rate INTEGER," +
-                                           "restock_interval INTEGER," +
-                                           "UNIQUE(trader_id, template_id, ql, material, rarity, weight, enchantments) ON CONFLICT REPLACE" +
-                                           ");");
-        ps.execute();
-        ps = conn.prepareStatement("CREATE TABLE IF NOT EXISTS tag_stock (" +
-                                           "tag TEXT," +
-                                           "template_id INTEGER," +
-                                           "ql REAL," +
-                                           "price INTEGER," +
-                                           "material INTEGER," +
-                                           "rarity INTEGER," +
-                                           "weight INTEGER," +
-                                           "enchantments TEXT," +
-                                           "max_num INTEGER," +
-                                           "restock_rate INTEGER," +
-                                           "restock_interval INTEGER," +
-                                           "UNIQUE(tag, template_id, ql, material, rarity, weight, enchantments) ON CONFLICT REPLACE" +
-                                           ");");
-        ps.execute();
-        ps = conn.prepareStatement("CREATE TABLE IF NOT EXISTS last_restock (" +
-                                                             "id INTEGER," +
-                                                             "stock_hash INTEGER," +
-                                                             "last_restock INTEGER," +
-                                                             "UNIQUE(id, stock_hash) ON CONFLICT REPLACE" +
-                                                             ");");
-        ps.execute();
+    private static void init() throws SQLException {
+        int version;
+        try (Connection conn = DriverManager.getConnection(dbString)) {
+            conn.prepareStatement("CREATE TABLE IF NOT EXISTS traders (" +
+                                                                 "id INTEGER UNIQUE," +
+                                                                 "tag TEXT" +
+                                                                 ");").execute();
+            conn.prepareStatement("CREATE TABLE IF NOT EXISTS currency_traders (" +
+                                               "id INTEGER UNIQUE," +
+                                               "currency INTEGER," +
+                                               "tag TEXT" +
+                                               ");").execute();
+            conn.prepareStatement("CREATE TABLE IF NOT EXISTS stat_traders (" +
+                                               "id INTEGER UNIQUE," +
+                                               "stat TEXT," +
+                                               "ratio REAL," +
+                                               "tag TEXT" +
+                                               ");").execute();
+            conn.prepareStatement("CREATE TABLE IF NOT EXISTS trader_stock (" +
+                                               "trader_id INTEGER," +
+                                               "template_id INTEGER," +
+                                               "ql REAL," +
+                                               "price INTEGER," +
+                                               "material INTEGER," +
+                                               "rarity INTEGER," +
+                                               "weight INTEGER," +
+                                               "enchantments TEXT," +
+                                               "max_num INTEGER," +
+                                               "restock_rate INTEGER," +
+                                               "restock_interval INTEGER," +
+                                               "UNIQUE(trader_id, template_id, ql, material, rarity, weight, enchantments) ON CONFLICT REPLACE" +
+                                               ");").execute();
+            conn.prepareStatement("CREATE TABLE IF NOT EXISTS tag_stock (" +
+                                               "tag TEXT," +
+                                               "template_id INTEGER," +
+                                               "ql REAL," +
+                                               "price INTEGER," +
+                                               "material INTEGER," +
+                                               "rarity INTEGER," +
+                                               "weight INTEGER," +
+                                               "enchantments TEXT," +
+                                               "max_num INTEGER," +
+                                               "restock_rate INTEGER," +
+                                               "restock_interval INTEGER," +
+                                               "UNIQUE(tag, template_id, ql, material, rarity, weight, enchantments) ON CONFLICT REPLACE" +
+                                               ");").execute();
+            conn.prepareStatement("CREATE TABLE IF NOT EXISTS last_restock (" +
+                                               "id INTEGER," +
+                                               "stock_hash INTEGER," +
+                                               "last_restock INTEGER," +
+                                               "UNIQUE(id, stock_hash) ON CONFLICT REPLACE" +
+                                               ");").execute();
 
-        try (Statement statement = conn.createStatement()) {
-            try (ResultSet rs = statement.executeQuery("PRAGMA user_version;")) {
-                int version = rs.getInt(1);
-                if (version == 0) {
-                    conn.prepareStatement("ALTER TABLE trader_stock ADD COLUMN aux INTEGER;").execute();
-                    conn.prepareStatement("ALTER TABLE tag_stock ADD COLUMN aux INTEGER;").execute();
-                    conn.prepareStatement("PRAGMA user_version = 1;").execute();
-                    version = 1;
-                }
+            ResultSet rs = conn.prepareStatement("PRAGMA user_version;").executeQuery();
+            version = rs.getInt(1);
+            if (version == 0) {
+                conn.prepareStatement("ALTER TABLE trader_stock ADD COLUMN aux INTEGER;").execute();
+                conn.prepareStatement("ALTER TABLE tag_stock ADD COLUMN aux INTEGER;").execute();
+                conn.prepareStatement("PRAGMA user_version = 1;").execute();
+                version = 1;
+            }
 
-                if (version == 1) {
-                    conn.prepareStatement("ALTER TABLE currency_traders ADD COLUMN minimum_ql REAL NOT NULL DEFAULT -1;").execute();
-                    conn.prepareStatement("ALTER TABLE currency_traders ADD COLUMN exact_ql REAL NOT NULL DEFAULT -1;").execute();
-                    conn.prepareStatement("ALTER TABLE currency_traders ADD COLUMN material INTEGER NOT NULL DEFAULT -1;").execute();
-                    conn.prepareStatement("ALTER TABLE currency_traders ADD COLUMN rarity INTEGER NOT NULL DEFAULT -1;").execute();
-                    conn.prepareStatement("ALTER TABLE currency_traders ADD COLUMN weight INTEGER NOT NULL DEFAULT 1;").execute();
-                    conn.prepareStatement("PRAGMA user_version = 2;").execute();
-                }
+            if (version == 1) {
+                conn.prepareStatement("ALTER TABLE currency_traders ADD COLUMN minimum_ql REAL NOT NULL DEFAULT -1;").execute();
+                conn.prepareStatement("ALTER TABLE currency_traders ADD COLUMN exact_ql REAL NOT NULL DEFAULT -1;").execute();
+                conn.prepareStatement("ALTER TABLE currency_traders ADD COLUMN material INTEGER NOT NULL DEFAULT -1;").execute();
+                conn.prepareStatement("ALTER TABLE currency_traders ADD COLUMN rarity INTEGER NOT NULL DEFAULT -1;").execute();
+                conn.prepareStatement("ALTER TABLE currency_traders ADD COLUMN weight INTEGER NOT NULL DEFAULT 1;").execute();
+                conn.prepareStatement("PRAGMA user_version = 2;").execute();
+                version = 2;
+            }
+        }
+
+        if (version == 2) {
+            try (Connection conn = DriverManager.getConnection(dbString)) {
+                conn.setAutoCommit(false);
+
+                conn.prepareStatement("CREATE TABLE IF NOT EXISTS trader_stock_copy (" +
+                                              "trader_id INTEGER," +
+                                              "template_id INTEGER," +
+                                              "ql REAL," +
+                                              "price INTEGER," +
+                                              "material INTEGER," +
+                                              "rarity INTEGER," +
+                                              "weight INTEGER," +
+                                              "enchantments TEXT," +
+                                              "max_num INTEGER," +
+                                              "restock_rate INTEGER," +
+                                              "restock_interval INTEGER," +
+                                              "aux INTEGER" +
+                                              ");").execute();
+                conn.prepareStatement("CREATE TABLE IF NOT EXISTS tag_stock_copy (" +
+                                              "tag TEXT," +
+                                              "template_id INTEGER," +
+                                              "ql REAL," +
+                                              "price INTEGER," +
+                                              "material INTEGER," +
+                                              "rarity INTEGER," +
+                                              "weight INTEGER," +
+                                              "enchantments TEXT," +
+                                              "max_num INTEGER," +
+                                              "restock_rate INTEGER," +
+                                              "restock_interval INTEGER," +
+                                              "aux INTEGER" +
+                                              ");").execute();
+
+                conn.prepareStatement("INSERT INTO trader_stock_copy SELECT * FROM trader_stock;").execute();
+                conn.prepareStatement("INSERT INTO tag_stock_copy SELECT * FROM tag_stock;").execute();
+
+                conn.commit();
+            }
+
+            try (Connection conn = DriverManager.getConnection(dbString)) {
+                conn.setAutoCommit(false);
+                conn.prepareStatement("DROP TABLE trader_stock;").execute();
+                conn.prepareStatement("DROP TABLE tag_stock;").execute();
+
+                conn.prepareStatement("CREATE TABLE IF NOT EXISTS trader_stock (" +
+                                              "trader_id INTEGER," +
+                                              "template_id INTEGER," +
+                                              "ql REAL," +
+                                              "price INTEGER," +
+                                              "material INTEGER," +
+                                              "rarity INTEGER," +
+                                              "weight INTEGER," +
+                                              "enchantments TEXT," +
+                                              "max_num INTEGER," +
+                                              "restock_rate INTEGER," +
+                                              "restock_interval INTEGER," +
+                                              "aux INTEGER," +
+                                              "inscription TEXT NOT NULL DEFAULT ''," +
+                                              "UNIQUE(trader_id, template_id, ql, material, rarity, weight, enchantments, aux, inscription) ON CONFLICT REPLACE" +
+                                              ");").execute();
+                conn.prepareStatement("CREATE TABLE IF NOT EXISTS tag_stock (" +
+                                              "tag TEXT," +
+                                              "template_id INTEGER," +
+                                              "ql REAL," +
+                                              "price INTEGER," +
+                                              "material INTEGER," +
+                                              "rarity INTEGER," +
+                                              "weight INTEGER," +
+                                              "enchantments TEXT," +
+                                              "max_num INTEGER," +
+                                              "restock_rate INTEGER," +
+                                              "restock_interval INTEGER," +
+                                              "aux INTEGER," +
+                                              "inscription TEXT NOT NULL DEFAULT ''," +
+                                              "UNIQUE(tag, template_id, ql, material, rarity, weight, enchantments, aux, inscription) ON CONFLICT REPLACE" +
+                                              ");").execute();
+
+                conn.prepareStatement("INSERT INTO trader_stock (trader_id, template_id, ql, price, material, rarity, weight, enchantments, max_num, restock_rate, restock_interval, aux) " +
+                                              "SELECT * FROM trader_stock_copy;").execute();
+                conn.prepareStatement("INSERT INTO tag_stock (tag, template_id, ql, price, material, rarity, weight, enchantments, max_num, restock_rate, restock_interval, aux) " +
+                                              "SELECT * FROM tag_stock_copy;").execute();
+
+                conn.prepareStatement("DROP TABLE trader_stock_copy;").execute();
+                conn.prepareStatement("DROP TABLE tag_stock_copy;").execute();
+
+                conn.prepareStatement("PRAGMA user_version = 3;").execute();
+                conn.setAutoCommit(true);
             }
         }
 
@@ -144,10 +227,10 @@ public class CustomTraderDatabase {
         try {
             if (dbString.isEmpty())
                 dbString = "jdbc:sqlite:" + Constants.dbHost + "/sqlite/" + CustomTraderMod.dbName;
-            db = DriverManager.getConnection(dbString);
             if (!created) {
-                init(db);
+                init();
             }
+            db = DriverManager.getConnection(dbString);
             execute.run(db);
         } finally {
             try {
@@ -651,7 +734,8 @@ public class CustomTraderDatabase {
                             (byte)rs.getInt(6),
                             rs.getInt(7),
                             Enchantment.parseEnchantments(rs.getString(8)),
-                            rs.getByte(12)),
+                            rs.getByte(12),
+                            rs.getString(13)),
                             rs.getInt(9),
                             rs.getInt(10),
                             rs.getInt(11)));
@@ -670,18 +754,18 @@ public class CustomTraderDatabase {
         return new StockInfo[0];
     }
 
-    public static void addStockItemTo(Creature trader, int templateId, float ql, int price, byte material, byte rarity, int weight, Enchantment[] enchantments, byte aux, int maxStock, int restockRate, int restockInterval) throws StockUpdateException {
+    public static void addStockItemTo(Creature trader, int templateId, float ql, int price, byte material, byte rarity, int weight, Enchantment[] enchantments, byte aux, String inscription, int maxStock, int restockRate, int restockInterval) throws StockUpdateException {
         try {
             String tag = getTagFor(trader);
             if (!tag.isEmpty()) {
-                addStockItemTo(tag, templateId, ql, price, material, rarity, weight, enchantments, aux, maxStock, restockRate, restockInterval);
+                addStockItemTo(tag, templateId, ql, price, material, rarity, weight, enchantments, aux, inscription, maxStock, restockRate, restockInterval);
                 return;
             }
 
             execute(db -> {
-                PreparedStatement ps = db.prepareStatement("INSERT INTO trader_stock VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                PreparedStatement ps = db.prepareStatement("INSERT INTO trader_stock VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 ps.setLong(1, trader.getWurmId());
-                setStockValues(templateId, ql, price, material, rarity, weight, enchantments, aux, maxStock, restockRate, restockInterval, ps);
+                setStockValues(templateId, ql, price, material, rarity, weight, enchantments, aux, inscription, maxStock, restockRate, restockInterval, ps);
                 ps.execute();
             });
         } catch (SQLException e) {
@@ -692,12 +776,12 @@ public class CustomTraderDatabase {
         }
     }
 
-    public static void addStockItemTo(String tag, int templateId, float ql, int price, byte material, byte rarity, int weight, Enchantment[] enchantments, byte aux, int maxStock, int restockRate, int restockInterval) throws StockUpdateException {
+    public static void addStockItemTo(String tag, int templateId, float ql, int price, byte material, byte rarity, int weight, Enchantment[] enchantments, byte aux, String inscription, int maxStock, int restockRate, int restockInterval) throws StockUpdateException {
         try {
             execute(db -> {
-                PreparedStatement ps = db.prepareStatement("INSERT INTO tag_stock VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                PreparedStatement ps = db.prepareStatement("INSERT INTO tag_stock VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 ps.setString(1, tag);
-                setStockValues(templateId, ql, price, material, rarity, weight, enchantments, aux, maxStock, restockRate, restockInterval, ps);
+                setStockValues(templateId, ql, price, material, rarity, weight, enchantments, aux, inscription, maxStock, restockRate, restockInterval, ps);
                 ps.execute();
             });
         } catch (SQLException e) {
@@ -708,7 +792,7 @@ public class CustomTraderDatabase {
         }
     }
 
-    private static void setStockValues(int templateId, float ql, int price, byte material, byte rarity, int weight, Enchantment[] enchantments, byte aux, int maxStock, int restockRate, int restockInterval, PreparedStatement ps) throws SQLException {
+    private static void setStockValues(int templateId, float ql, int price, byte material, byte rarity, int weight, Enchantment[] enchantments, byte aux, String inscription, int maxStock, int restockRate, int restockInterval, PreparedStatement ps) throws SQLException {
         ps.setInt(2, templateId);
         ps.setFloat(3, ql);
         ps.setInt(4, price);
@@ -720,6 +804,7 @@ public class CustomTraderDatabase {
         ps.setInt(10, restockRate);
         ps.setInt(11, restockInterval);
         ps.setByte(12, aux);
+        ps.setString(13, inscription);
     }
 
     public static void removeStockItemFrom(Creature trader, StockInfo stockInfo) throws StockUpdateException {
@@ -883,6 +968,17 @@ public class CustomTraderDatabase {
                     }
                 }
                 item.setAuxData(stockItem.aux);
+                if (!stockItem.inscription.isEmpty() && item.canHaveInscription()) {
+                    item.setInscription(stockItem.inscription, "");
+
+                    if (stockItem.aux == 1) {
+                        Recipe recipe = Objects.requireNonNull(item.getInscription()).getRecipe();
+                        if (recipe != null) {
+                            item.setName("\"" + recipe.getName() + "\"", true);
+                            item.setRarity(recipe.getLootableRarity());
+                        }
+                    }
+                }
                 inventory.insertItem(item, true);
             }
 

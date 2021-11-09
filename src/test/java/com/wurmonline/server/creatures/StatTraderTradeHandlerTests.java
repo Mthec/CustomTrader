@@ -45,7 +45,7 @@ public class StatTraderTradeHandlerTests extends CustomTraderTest {
         assert stat != null;
         trader = factory.createNewStatTrader(stat);
         assert trader.getShop() != null;
-        CustomTraderDatabase.addStockItemTo(trader, 5, 5, 1, (byte)0, (byte)0, 5, new Enchantment[0], (byte)0, 5, 5, 0);
+        CustomTraderDatabase.addStockItemTo(trader, 5, 5, 1, (byte)0, (byte)0, 5, new Enchantment[0], (byte)0, "", 5, 5, 0);
         CustomTraderDatabase.restock(trader);
         trade = new StatTraderTrade(player, trader, stat);
         player.setTrade(trade);
@@ -124,7 +124,7 @@ public class StatTraderTradeHandlerTests extends CustomTraderTest {
     void testPrice() throws NoSuchFieldException, IllegalAccessException, CustomTraderDatabase.StockUpdateException {
         trade.end(trader, true);
         CustomTraderDatabase.deleteAllStockFor(trader);
-        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 10, (byte)0, (byte)2, 1, new Enchantment[0], (byte)0, 1, 0, 100);
+        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 10, (byte)0, (byte)2, 1, new Enchantment[0], (byte)0, "", 1, 0, 100);
         CustomTraderDatabase.fullyStock(trader);
         trade = new StatTraderTrade(player, trader, stat);
         player.setTrade(trade);
@@ -143,7 +143,7 @@ public class StatTraderTradeHandlerTests extends CustomTraderTest {
     void testNotEnoughToMeetPrice() throws NoSuchFieldException, IllegalAccessException, CustomTraderDatabase.StockUpdateException {
         trade.end(trader, true);
         CustomTraderDatabase.deleteAllStockFor(trader);
-        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 10, (byte)0, (byte)2, 1, new Enchantment[0], (byte)0, 1, 0, 100);
+        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 10, (byte)0, (byte)2, 1, new Enchantment[0], (byte)0, "", 1, 0, 100);
         CustomTraderDatabase.fullyStock(trader);
         trade = new StatTraderTrade(player, trader, stat);
         player.setTrade(trade);
@@ -176,7 +176,7 @@ public class StatTraderTradeHandlerTests extends CustomTraderTest {
             trade.getTradingWindow(1).removeItem(item);
         }
         CustomTraderDatabase.deleteAllStockFor(trader);
-        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 1, (byte)0, (byte)2, 1, new Enchantment[0], (byte)0, 1, 0, 100);
+        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 1, (byte)0, (byte)2, 1, new Enchantment[0], (byte)0, "", 1, 0, 100);
         CustomTraderDatabase.fullyStock(trader);
         assert trader.getInventory().getItems().size() == 1;
 

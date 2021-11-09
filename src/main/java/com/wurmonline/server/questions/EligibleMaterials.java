@@ -3,6 +3,7 @@ package com.wurmonline.server.questions;
 import com.google.common.base.Joiner;
 import com.wurmonline.server.behaviours.MethodsItems;
 import com.wurmonline.server.items.Item;
+import com.wurmonline.server.items.ItemList;
 import com.wurmonline.server.items.ItemTemplate;
 import com.wurmonline.shared.constants.ItemMaterials;
 
@@ -54,7 +55,11 @@ class EligibleMaterials {
         }
 
         if (template.isWood()) {
-            materialGroup = MaterialGroups.WOOD;
+            if (template.getTemplateId() == ItemList.paperSheet || template.getTemplateId() == ItemList.papyrusSheet) {
+                materialGroup = MaterialGroups.SPECIFIC;
+            } else {
+                materialGroup = MaterialGroups.WOOD;
+            }
         } else if (template.isMetal()) {
             materialGroup = MaterialGroups.METAL;
         } else if (template.isMeat()) {

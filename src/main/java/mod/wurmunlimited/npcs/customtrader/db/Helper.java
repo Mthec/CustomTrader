@@ -29,7 +29,7 @@ public class Helper {
             inventory = new Inventory();
             inventories.put(trader, inventory);
             for (Item item : items) {
-                StockItem stock = new StockItem(item.getTemplateId(), item.getQualityLevel(), item.getPrice(), item.getMaterial(), item.getRarity(), item.getWeightGrams(), Enchantment.parseEnchantments(item), item.getAuxData());
+                StockItem stock = new StockItem(item.getTemplateId(), item.getQualityLevel(), item.getPrice(), item.getMaterial(), item.getRarity(), item.getWeightGrams(), Enchantment.parseEnchantments(item), item.getAuxData(), StockItem.getInscription(item));
                 inventory.add(stock);
             }
         }

@@ -36,7 +36,7 @@ public class OnPlayerMessageReceiver {
 
     void addStockTo(Creature trader) {
         try {
-            CustomTraderDatabase.addStockItemTo(trader, ItemList.book, 1f, 1, Materials.MATERIAL_PAPER, (byte)0, 100, new Enchantment[0], (byte)0, maxStock, 1, 1);
+            CustomTraderDatabase.addStockItemTo(trader, ItemList.book, 1f, 1, Materials.MATERIAL_PAPER, (byte)0, 100, new Enchantment[0], (byte)0, "", maxStock, 1, 1);
         } catch (CustomTraderDatabase.StockUpdateException e) {
             throw new RuntimeException(e);
         }

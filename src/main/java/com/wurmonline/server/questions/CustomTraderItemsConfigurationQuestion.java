@@ -2,6 +2,7 @@ package com.wurmonline.server.questions;
 
 import com.wurmonline.server.creatures.Creature;
 import com.wurmonline.server.items.ItemFactory;
+import com.wurmonline.server.items.Recipe;
 import com.wurmonline.server.spells.Spell;
 import com.wurmonline.shared.util.StringUtilities;
 import mod.wurmunlimited.bml.BML;
@@ -9,10 +10,12 @@ import mod.wurmunlimited.bml.BMLBuilder;
 import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
 import mod.wurmunlimited.npcs.customtrader.stock.Enchantment;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class CustomTraderItemsConfigurationQuestion extends CustomTraderQuestionExtension {
+    private static final int MAX_INSCRIPTION_LENGTH = 500;
     private final Creature trader;
     private ItemDefinitionStage stage = ItemDefinitionStage.TEMPLATE;
     private final PaymentType paymentType;
@@ -22,6 +25,7 @@ public class CustomTraderItemsConfigurationQuestion extends CustomTraderQuestion
     private Template template;
     private Details details;
     private Enchantments enchantments;
+    private Recipes recipes;
     private Restocking restocking;
 
     private EligibleMaterials materials;
@@ -31,6 +35,7 @@ public class CustomTraderItemsConfigurationQuestion extends CustomTraderQuestion
         DETAILS,
         ENCHANTMENTS,
         ADD_ENCHANTMENT,
+        ADVANCED,
         RESTOCKING
     }
 
@@ -68,6 +73,12 @@ public class CustomTraderItemsConfigurationQuestion extends CustomTraderQuestion
         this.restocking = restocking;
         if (template.itemTemplate != null)
             materials = new EligibleMaterials(template.itemTemplate);
+
+        if (stage == ItemDefinitionStage.ADVANCED) {
+            if (template.itemTemplate.canHaveInscription()) {
+                recipes = new Recipes();
+            }
+        }
     }
 
     @Override
@@ -97,7 +108,7 @@ public class CustomTraderItemsConfigurationQuestion extends CustomTraderQuestion
                 // TODO - How can I break the link between template > material > details?
                 if (template.itemTemplate != null) {
                     materials = new EligibleMaterials(template.itemTemplate);
-                    details = new Details(details.ql, materials.getIndexOf(template.itemTemplate.getMaterial()), details.rarity, details.price, template.itemTemplate.getWeightGrams(), details.aux);
+                    details = new Details(details.ql, materials.getIndexOf(template.itemTemplate.getMaterial()), details.rarity, details.price, template.itemTemplate.getWeightGrams(), details.aux, details.inscription);
                 } else
                     reshowStage = true;
                 break;
@@ -107,7 +118,6 @@ public class CustomTraderItemsConfigurationQuestion extends CustomTraderQuestion
                 byte rarity = details.rarity;
                 int price = details.price;
                 int weight = details.weight;
-                byte aux = details.aux;
 
                 try {
                     String qlString = properties.getProperty("ql");
@@ -188,19 +198,6 @@ public class CustomTraderItemsConfigurationQuestion extends CustomTraderQuestion
                     reshowStage = true;
                 }
 
-                String auxString = properties.getProperty("aux");
-                if (auxString != null && auxString.length() > 0) {
-                    try {
-                        byte newAux = Byte.parseByte(auxString);
-                        if (newAux != aux) {
-                            aux = newAux;
-                        }
-                    } catch (NumberFormatException e) {
-                        responder.getCommunicator().sendNormalServerMessage("Aux Byte was invalid.");
-                        reshowStage = true;
-                    }
-                }
-
                 try {
                     String weightString = properties.getProperty("weight");
 
@@ -225,7 +222,7 @@ public class CustomTraderItemsConfigurationQuestion extends CustomTraderQuestion
                     reshowStage = true;
                 }
 
-                details = new Details(ql, materialIndex, rarity, price, weight, aux);
+                details = new Details(ql, materialIndex, rarity, price, weight, (byte)0, "");
                 break;
             case ENCHANTMENTS:
                 int i = 0;
@@ -290,6 +287,61 @@ public class CustomTraderItemsConfigurationQuestion extends CustomTraderQuestion
                         enchantments.setPower(Enchantments.allEnchantments[enchant], power);
                 }
                 break;
+            case ADVANCED:
+                byte aux = details.aux;
+                String inscription = details.inscription;
+                boolean canBeInscribed = template.itemTemplate.canHaveInscription();
+                boolean alreadyHasRecipe = canBeInscribed && aux == 1 && !inscription.isEmpty();
+
+                if (canBeInscribed) {
+                    String recipeString = properties.getProperty("recipe");
+                    if (recipeString != null && recipeString.length() > 0) {
+                        try {
+                            int newRecipeIndex = Integer.parseInt(recipeString);
+                            Recipe newRecipe = recipes.getRecipe(newRecipeIndex);
+                            if (newRecipe != null) {
+                                aux = 1;
+                                inscription = recipes.getInscriptionFor(newRecipe);
+                                details = new Details(details.ql, details.materialIndex, details.rarity, details.price, details.weight, aux, inscription);
+                                break;
+                            }
+                        } catch (NumberFormatException | IOException e) {
+                            logger.warning("Recipe selection was invalid.");
+                            e.printStackTrace();
+                            responder.getCommunicator().sendNormalServerMessage("Recipe was invalid.");
+                            reshowStage = true;
+                            break;
+                        }
+                    }
+                }
+
+                String auxString = properties.getProperty("aux");
+                if (auxString != null && auxString.length() > 0) {
+                    try {
+                        byte newAux = Byte.parseByte(auxString);
+                        if (newAux != aux) {
+                            aux = newAux;
+                        }
+                    } catch (NumberFormatException e) {
+                        responder.getCommunicator().sendNormalServerMessage("Aux Byte was invalid.");
+                        reshowStage = true;
+                    }
+                }
+
+                if (canBeInscribed) {
+                    String inscriptionString = properties.getProperty("inscription");
+                    if (inscriptionString != null && inscriptionString.length() > 0) {
+                        inscription = inscriptionString;
+                    }
+                }
+
+                if (!alreadyHasRecipe && !inscription.isEmpty() && aux == (byte)1) {
+                    aux = 0;
+                    responder.getCommunicator().sendNormalServerMessage("Aux Byte was set to 0 as Inscription was not blank.  To add a recipe, please select from the above dropdown.");
+                }
+
+                details = new Details(details.ql, details.materialIndex, details.rarity, details.price, details.weight, aux, inscription);
+                break;
             case RESTOCKING:
                 int restockRate = getPositiveIntegerOrDefault("rate", restocking.restockRate);
                 int restockInterval = getPositiveIntegerOrDefault("interval", restocking.restockInterval);
@@ -317,13 +369,15 @@ public class CustomTraderItemsConfigurationQuestion extends CustomTraderQuestion
                 stage = ItemDefinitionStage.ENCHANTMENTS;
             } else if (wasSelected("ADD_ENCHANTMENT")) {
                 stage = ItemDefinitionStage.ADD_ENCHANTMENT;
+            } else if (wasSelected("ADVANCED")) {
+                stage = ItemDefinitionStage.ADVANCED;
             } else if (wasSelected("END")) {
                 List<Enchantment> enchants = enchantments.toList();
 
                 try {
                     CustomTraderDatabase.addStockItemTo(trader, template.itemTemplate.getTemplateId(),
                             details.ql, details.price, materials.getMaterial(details.materialIndex), details.rarity,
-                            details.weight, enchants.toArray(new Enchantment[0]), details.aux,
+                            details.weight, enchants.toArray(new Enchantment[0]), details.aux, details.inscription,
                             restocking.maxStock, restocking.restockRate, restocking.restockInterval);
                     responder.getCommunicator().sendNormalServerMessage(trader.getName() + " adds the new stock to their list.");
                     return;
@@ -397,11 +451,11 @@ public class CustomTraderItemsConfigurationQuestion extends CustomTraderQuestion
                                       .entry("price", Integer.toString(details.price), 10).spacer()
                                       .text(priceSuffix))
                         .newLine()
-                        .label("Advanced:")
-                        .harray(b -> b.label("Aux Byte").spacer().entry("aux", Byte.toString(details.aux), 3).spacer())
                         .newLine()
                         .harray(b -> b.button("TEMPLATE", "Back").spacer().button("RESTOCKING", "Next").spacer()
-                                                   .button("ENCHANTMENTS", "Enchantments").spacer().button("cancel", "Cancel"));
+                                                   .button("ENCHANTMENTS", "Enchantments").spacer()
+                                                   .button("ADVANCED", "Advanced").spacer()
+                                                   .button("cancel", "Cancel"));
                 break;
             case ENCHANTMENTS:
                 AtomicInteger i = new AtomicInteger(0);
@@ -421,6 +475,29 @@ public class CustomTraderItemsConfigurationQuestion extends CustomTraderQuestion
                               .harray(b -> b.label("Power").spacer().entry("power", "0", 4))
                               .newLine()
                               .harray(b -> b.button("ENCHANTMENTS", "Add").spacer().button("back", "Back"));
+                break;
+            case ADVANCED:
+                boolean canBeInscribed = template.itemTemplate.canHaveInscription();
+                bml = bml.text("Set the advanced details for the " + template.itemTemplate.getName() + ":");
+
+                if (canBeInscribed) {
+                    bml = bml.text("If recipe is set Aux Byte and Inscription are ignored.")
+                             .harray(b -> b.label("Recipe").spacer().dropdown("recipe", recipes.options));
+                }
+
+                bml = bml.newLine()
+                         .harray(b -> b.label("Aux Byte").spacer().entry("aux", Byte.toString(details.aux), 3).spacer())
+                         .newLine()
+                              .If(canBeInscribed, b -> b.If(details.aux == 1 && !details.inscription.isEmpty(),
+                                                      b2 -> b2.text("This item has a recipe."),
+                                                      b2 -> b2.harray(b3 -> b3
+                                              .label("Inscription").spacer())
+                                              .raw("input{id=\"inscription\";maxchars=\"" + MAX_INSCRIPTION_LENGTH + "\";maxlines=\"-1\";bgcolor=\"200,200,200\";color=\"0,0,0\";text=\"" + details.inscription + "\"}")),
+                                      b -> b.If(canBeInscribed && details.aux == 1 && !details.inscription.isEmpty(),
+                                              b2 -> b2.text("This item has a recipe."),
+                                              b2 -> b2.text("This item cannot have an inscription.")))
+                        .newLine()
+                        .harray(b -> b.button("DETAILS", "Back").spacer().button("RESTOCKING", "Next").spacer());
                 break;
             case RESTOCKING:
                 bml = bml.text("Set the restock schedule for the " + ItemFactory.generateName(template.itemTemplate, materials.getMaterial(details.materialIndex)) + ":")

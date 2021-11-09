@@ -1,11 +1,10 @@
-package mod.wurmunlimited.npcs.customtrader;
+package mod.wurmunlimited.npcs.customtrader.db;
 
 import com.wurmonline.server.creatures.Creature;
-import com.wurmonline.server.items.ItemList;
-import com.wurmonline.server.items.ItemTemplateFactory;
-import com.wurmonline.server.items.NoSuchTemplateException;
+import com.wurmonline.server.items.*;
 import com.wurmonline.server.spells.Spells;
-import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
+import mod.wurmunlimited.npcs.customtrader.Currency;
+import mod.wurmunlimited.npcs.customtrader.CustomTraderTest;
 import mod.wurmunlimited.npcs.customtrader.stats.Health;
 import mod.wurmunlimited.npcs.customtrader.stats.Karma;
 import mod.wurmunlimited.npcs.customtrader.stats.Stat;
@@ -16,6 +15,7 @@ import org.gotti.wurmunlimited.modloader.ReflectionUtil;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.*;
 import java.util.ArrayList;
@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Objects;
 
 import static mod.wurmunlimited.npcs.customtrader.CustomTraderDatabaseAssertions.*;
-import static mod.wurmunlimited.npcs.customtrader.DatabaseActions.select;
+import static mod.wurmunlimited.npcs.customtrader.db.DatabaseActions.select;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -108,8 +108,8 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
         Creature trader = factory.createNewCustomTrader(tag);
         Creature secondTrader = factory.createNewCustomTrader(tag);
 
-        CustomTraderDatabase.addStockItemTo(tag, num + 1, num + 1, num + 1, b, b, num + 1, new Enchantment[0], (byte)0, num + 1, num + 1, num + 1);
-        CustomTraderDatabase.addStockItemTo(tag, num, num, num, b, b, num, new Enchantment[0], (byte)0, num, num, num);
+        CustomTraderDatabase.addStockItemTo(tag, num + 1, num + 1, num + 1, b, b, num + 1, new Enchantment[0], (byte)0, "", num + 1, num + 1, num + 1);
+        CustomTraderDatabase.addStockItemTo(tag, num, num, num, b, b, num, new Enchantment[0], (byte)0, "", num, num, num);
         CustomTraderDatabase.restock(trader);
         assert trader.getInventory().getItems().size() == num * 2 + 1;
 
@@ -133,7 +133,7 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
         String tag = "test";
         String newTag = "newTag";
         Creature trader = factory.createNewCustomTrader(tag);
-        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 1, (byte)1, (byte)1, 1, new Enchantment[0], (byte)0, 1, 1, 1);
+        CustomTraderDatabase.addStockItemTo(trader, 1, 1, 1, (byte)1, (byte)1, 1, new Enchantment[0], (byte)0, "", 1, 1, 1);
 
         assertDoesNotThrow(() -> CustomTraderDatabase.renameTag(tag, newTag));
         assertEquals(newTag, CustomTraderDatabase.getTagFor(trader));
@@ -256,9 +256,10 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
     void testAddGetStockItemToUniqueTrader() throws CustomTraderDatabase.StockUpdateException {
         Creature uniqueTrader = factory.createNewCustomTrader();
         int num = 5;
-        byte b = 0;
-        CustomTraderDatabase.addStockItemTo(uniqueTrader, 0, num, num, b, b, num, new Enchantment[0], (byte)0, num, num, num);
-        CustomTraderDatabase.addStockItemTo(uniqueTrader, 1, num, num, b, b, num, new Enchantment[0], (byte)0, num, num, num);
+        byte b = 1;
+        String inscription = "Testing";
+        CustomTraderDatabase.addStockItemTo(uniqueTrader, 0, num, num, b, b, num, new Enchantment[0], b, inscription, num, num, num);
+        CustomTraderDatabase.addStockItemTo(uniqueTrader, 1, num, num, b, b, num, new Enchantment[0], b, inscription, num, num, num);
 
         StockInfo[] allStock = CustomTraderDatabase.getStockFor(uniqueTrader);
         assertEquals(2, allStock.length);
@@ -271,6 +272,8 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
             assertEquals(b, stock.item.material);
             assertEquals(b, stock.item.rarity);
             assertEquals(num, stock.item.weight);
+            assertEquals(b, stock.item.aux);
+            assertEquals(inscription, stock.item.inscription);
             assertEquals(num, stock.maxNum);
             assertEquals(num, stock.restockRate);
             assertEquals(num, stock.restockInterval);
@@ -282,9 +285,10 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
         String tag = "test";
         Creature tagTrader = factory.createNewCustomTrader(tag);
         int num = 5;
-        byte b = 0;
-        CustomTraderDatabase.addStockItemTo(tag, 0, num, num, b, b, num, new Enchantment[0], (byte)0, num, num, num);
-        CustomTraderDatabase.addStockItemTo(tag, 1, num, num, b, b, num, new Enchantment[0], (byte)0, num, num, num);
+        byte b = 1;
+        String inscription = "Testing";
+        CustomTraderDatabase.addStockItemTo(tag, 0, num, num, b, b, num, new Enchantment[0], b, inscription, num, num, num);
+        CustomTraderDatabase.addStockItemTo(tag, 1, num, num, b, b, num, new Enchantment[0], b, inscription, num, num, num);
 
         StockInfo[] allStock = CustomTraderDatabase.getStockFor(tagTrader);
         assertEquals(2, allStock.length);
@@ -297,6 +301,8 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
             assertEquals(b, stock.item.material);
             assertEquals(b, stock.item.rarity);
             assertEquals(num, stock.item.weight);
+            assertEquals(b, stock.item.aux);
+            assertEquals(inscription, stock.item.inscription);
             assertEquals(num, stock.maxNum);
             assertEquals(num, stock.restockRate);
             assertEquals(num, stock.restockInterval);
@@ -307,10 +313,11 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
     void testRemoveStockItemFromUniqueTrader() throws CustomTraderDatabase.StockUpdateException {
         Creature uniqueTrader = factory.createNewCustomTrader();
         int num = 5;
-        byte b = 0;
-        CustomTraderDatabase.addStockItemTo(uniqueTrader, num + 1, num + 1, num + 1, b, b, num + 1, new Enchantment[0], (byte)0, num + 1, num + 1, 0);
+        byte b = 1;
+        String inscription = "Testing";
+        CustomTraderDatabase.addStockItemTo(uniqueTrader, num + 1, num + 1, num + 1, b, b, num + 1, new Enchantment[0], b, inscription, num + 1, num + 1, 0);
         StockInfo toRemove = CustomTraderDatabase.getStockFor(uniqueTrader)[0];
-        CustomTraderDatabase.addStockItemTo(uniqueTrader, num, num, num, b, b, num, new Enchantment[0], (byte)0, num, num, 0);
+        CustomTraderDatabase.addStockItemTo(uniqueTrader, num, num, num, b, b, num, new Enchantment[0], b, inscription, num, num, 0);
         CustomTraderDatabase.restock(uniqueTrader);
         assert uniqueTrader.getInventory().getItems().size() == num * 2 + 1;
 
@@ -325,6 +332,8 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
         assertEquals(b, stock.item.material);
         assertEquals(b, stock.item.rarity);
         assertEquals(num, stock.item.weight);
+        assertEquals(b, stock.item.aux);
+        assertEquals(inscription, stock.item.inscription);
         assertEquals(num, stock.maxNum);
         assertEquals(num, stock.restockRate);
         assertEquals(0, stock.restockInterval);
@@ -336,10 +345,11 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
         String tag = "test";
         Creature tagTrader = factory.createNewCustomTrader(tag);
         int num = 5;
-        byte b = 0;
-        CustomTraderDatabase.addStockItemTo(tag, num + 1, num + 1, num + 1, b, b, num + 1, new Enchantment[0], (byte)0, num + 1, num + 1, num + 1);
+        byte b = 1;
+        String inscription = "Testing";
+        CustomTraderDatabase.addStockItemTo(tag, num + 1, num + 1, num + 1, b, b, num + 1, new Enchantment[0], b, inscription, num + 1, num + 1, num + 1);
         StockInfo toRemove = CustomTraderDatabase.getStockFor(tagTrader)[0];
-        CustomTraderDatabase.addStockItemTo(tag, num, num, num, b, b, num, new Enchantment[0], (byte)0, num, num, num);
+        CustomTraderDatabase.addStockItemTo(tag, num, num, num, b, b, num, new Enchantment[0], b, inscription, num, num, num);
         CustomTraderDatabase.restock(tagTrader);
         assert tagTrader.getInventory().getItems().size() == num * 2 + 1;
 
@@ -354,6 +364,8 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
         assertEquals(b, stock.item.material);
         assertEquals(b, stock.item.rarity);
         assertEquals(num, stock.item.weight);
+        assertEquals(b, stock.item.aux);
+        assertEquals(inscription, stock.item.inscription);
         assertEquals(num, stock.maxNum);
         assertEquals(num, stock.restockRate);
         assertEquals(num, stock.restockInterval);
@@ -365,8 +377,8 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
         Creature uniqueTrader = factory.createNewCustomTrader();
         int num = 5;
         byte b = 0;
-        CustomTraderDatabase.addStockItemTo(uniqueTrader, num, num, num, b, b, num, new Enchantment[0], (byte)0, num, num, num);
-        CustomTraderDatabase.addStockItemTo(uniqueTrader, num + 1, num + 1, num + 1, b, b, num + 1, new Enchantment[0], (byte)0, num + 1, num + 1, num + 1);
+        CustomTraderDatabase.addStockItemTo(uniqueTrader, num, num, num, b, b, num, new Enchantment[0], (byte)0, "", num, num, num);
+        CustomTraderDatabase.addStockItemTo(uniqueTrader, num + 1, num + 1, num + 1, b, b, num + 1, new Enchantment[0], (byte)0, "", num + 1, num + 1, num + 1);
         CustomTraderDatabase.restock(uniqueTrader);
 
         assert CustomTraderDatabase.getStockFor(uniqueTrader).length == 2;
@@ -387,8 +399,8 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
                 new Enchantment(Spells.SPELL_CIRCLE_OF_CUNNING, 100f),
                 new Enchantment(Spells.SPELL_WIND_OF_AGES, 200f)
         };
-        CustomTraderDatabase.addStockItemTo(trader, num, num, num, b, b, num, enchantments, (byte)0, num, num, num);
-        CustomTraderDatabase.addStockItemTo(trader, num, num, num, b, b, num, enchantments, (byte)0, num + 1, num + 1, num + 1);
+        CustomTraderDatabase.addStockItemTo(trader, num, num, num, b, b, num, enchantments, (byte)0, "", num, num, num);
+        CustomTraderDatabase.addStockItemTo(trader, num, num, num, b, b, num, enchantments, (byte)0, "", num + 1, num + 1, num + 1);
         CustomTraderDatabase.restock(trader);
 
         assertEquals(1, CustomTraderDatabase.getStockFor(trader).length);
@@ -399,7 +411,7 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
         Creature trader = factory.createNewCustomTrader();
         int num = 1;
         byte b = 0;
-        CustomTraderDatabase.addStockItemTo(trader, num, num, num, b, b, num, new Enchantment[0], (byte)0, num, num, num);
+        CustomTraderDatabase.addStockItemTo(trader, num, num, num, b, b, num, new Enchantment[0], (byte)0, "", num, num, num);
         CustomTraderDatabase.restock(trader);
 
         assertEquals(0, trader.getInventory().getFirstContainedItem().getAuxData());
@@ -411,10 +423,62 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
         int num = 1;
         byte b = 0;
         byte aux = 3;
-        CustomTraderDatabase.addStockItemTo(trader, num, num, num, b, b, num, new Enchantment[0], aux, num, num, num);
+        CustomTraderDatabase.addStockItemTo(trader, num, num, num, b, b, num, new Enchantment[0], aux, "", num, num, num);
         CustomTraderDatabase.restock(trader);
 
         assertEquals(aux, trader.getInventory().getFirstContainedItem().getAuxData());
+    }
+
+    @Test
+    void testInscriptionBlank() throws CustomTraderDatabase.StockUpdateException {
+        Creature trader = factory.createNewCustomTrader();
+        int num = 1;
+        byte b = 0;
+        CustomTraderDatabase.addStockItemTo(trader, num, num, num, b, b, num, new Enchantment[0], (byte)0, "", num, num, num);
+        CustomTraderDatabase.restock(trader);
+
+        assertNull(trader.getInventory().getFirstContainedItem().getInscription());
+    }
+
+    @Test
+    void testInscriptionSetProperlyNotPaper() throws CustomTraderDatabase.StockUpdateException {
+        Creature trader = factory.createNewCustomTrader();
+        int num = 1;
+        byte b = 0;
+        String inscription = "Testing";
+        CustomTraderDatabase.addStockItemTo(trader, num, num, num, b, b, num, new Enchantment[0], b, inscription, num, num, num);
+        CustomTraderDatabase.restock(trader);
+
+        assertNull(trader.getInventory().getFirstContainedItem().getInscription());
+    }
+
+    @Test
+    void testInscriptionSetProperlyPaper() throws CustomTraderDatabase.StockUpdateException {
+        Creature trader = factory.createNewCustomTrader();
+        int num = 1;
+        byte b = 0;
+        String inscription = "Testing";
+        CustomTraderDatabase.addStockItemTo(trader, ItemList.paperSheet, num, num, b, b, num, new Enchantment[0], b, inscription, num, num, num);
+        CustomTraderDatabase.restock(trader);
+
+        assertEquals(inscription, Objects.requireNonNull(trader.getInventory().getFirstContainedItem().getInscription()).getInscription());
+    }
+
+    @Test
+    void testInscriptionSetProperlyPaperRecipe() throws CustomTraderDatabase.StockUpdateException, IOException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        Creature trader = factory.createNewCustomTrader();
+        int num = 1;
+        byte b = 0;
+        ReflectionUtil.callPrivateMethod(null, Recipes.class.getDeclaredMethod("readRecipeFile", String.class), "F:\\Steam\\steamapps\\common\\Wurm Unlimited\\WurmServerLauncher\\dist\\recipes\\recipe 0504.json");
+        Recipe recipe = Recipes.getAllRecipes()[0];
+        String inscription = com.wurmonline.server.questions.Recipes.getInscriptionFor(recipe);
+        CustomTraderDatabase.addStockItemTo(trader, ItemList.paperSheet, num, num, b, b, num, new Enchantment[0], (byte)1, inscription, num, num, num);
+        CustomTraderDatabase.restock(trader);
+
+        Item item = trader.getInventory().getFirstContainedItem();
+        assertEquals(inscription, Objects.requireNonNull(item.getInscription()).getInscription());
+        assertEquals("recipe \"" + recipe.getName() + "\"", item.getName());
+        assertEquals(recipe.getLootableRarity(), item.rarity);
     }
 
     private boolean hasAuxColumn(ResultSet rs) throws SQLException {
@@ -434,6 +498,30 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
             columns.remove(rs.getString(2));
         }
         return columns.isEmpty();
+    }
+
+    private boolean hasInscriptionColumn(ResultSet rs) throws SQLException {
+        boolean hasInscription = false;
+        while (rs.next()) {
+            if (rs.getString(2).equals("inscription")) {
+                hasInscription = true;
+                break;
+            }
+        }
+        return hasInscription;
+    }
+
+    private static void setStockValues(int templateId, float ql, int price, byte material, byte rarity, int weight, Enchantment[] enchantments, int maxStock, int restockRate, int restockInterval, PreparedStatement ps) throws SQLException {
+        ps.setInt(2, templateId);
+        ps.setFloat(3, ql);
+        ps.setInt(4, price);
+        ps.setByte(5, material);
+        ps.setByte(6, rarity);
+        ps.setInt(7, weight);
+        ps.setString(8, Enchantment.toSaveString(enchantments));
+        ps.setInt(9, maxStock);
+        ps.setInt(10, restockRate);
+        ps.setInt(11, restockInterval);
     }
 
     @Test
@@ -481,6 +569,14 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
             ps.setInt(2, 1);
             ps.setString(3, "1");
             ps.execute();
+            ps = db.prepareStatement("INSERT INTO trader_stock VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            ps.setLong(1, 1234);
+            setStockValues(1, 1, 1, (byte)1, (byte)1, 1, new Enchantment[0], 1, 1, 1, ps);
+            ps.execute();
+            ps = db.prepareStatement("INSERT INTO tag_stock VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            ps.setString(1, "tag");
+            setStockValues(1, 1, 1, (byte)1, (byte)1, 1, new Enchantment[0], 1, 1, 1, ps);
+            ps.execute();
             db.prepareStatement("PRAGMA user_version = 0;").execute();
 
             assert !hasAuxColumn(db.prepareStatement("PRAGMA table_info('trader_stock')").executeQuery());
@@ -488,7 +584,7 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
             assert !hasCurrencyColumns(db.prepareStatement("PRAGMA table_info('currency_traders')").executeQuery());
 
             try {
-                ReflectionUtil.callPrivateMethod(null, CustomTraderDatabase.class.getDeclaredMethod("init", Connection.class), db);
+                ReflectionUtil.callPrivateMethod(null, CustomTraderDatabase.class.getDeclaredMethod("init"));
             } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
                 throw new RuntimeException(e);
             }
@@ -496,6 +592,8 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
             assertTrue(hasAuxColumn(db.prepareStatement("PRAGMA table_info('trader_stock');").executeQuery()));
             assertTrue(hasAuxColumn(db.prepareStatement("PRAGMA table_info('tag_stock');").executeQuery()));
             assertTrue(hasCurrencyColumns(db.prepareStatement("PRAGMA table_info('currency_traders');").executeQuery()));
+            assertTrue(hasInscriptionColumn(db.prepareStatement("PRAGMA table_info('trader_stock');").executeQuery()));
+            assertTrue(hasInscriptionColumn(db.prepareStatement("PRAGMA table_info('tag_stock');").executeQuery()));
 
             ResultSet rs = db.prepareStatement("SELECT * FROM currency_traders;").executeQuery();
             rs.next();
@@ -514,11 +612,12 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
     void testDumpTagsToDb() throws SQLException, CustomTraderDatabase.StockUpdateException {
         int num = 5;
         byte b = 2;
+        String inscription = "Testing";
         Creature trader = factory.createNewCustomTrader("tag");
 
         CustomTraderDatabase.tagDumpDbString = "sqlite/tags.db";
-        CustomTraderDatabase.addStockItemTo("tag", num, num, num, b, b, num, new Enchantment[0], b, num, num, num);
-        CustomTraderDatabase.addStockItemTo("tag", num + 1, num + 1, num + 1, b, b, num + 1, new Enchantment[0], b, num + 1, num + 1, num + 1);
+        CustomTraderDatabase.addStockItemTo("tag", num, num, num, b, b, num, new Enchantment[0], b, inscription, num, num, num);
+        CustomTraderDatabase.addStockItemTo("tag", num + 1, num + 1, num + 1, b, b, num + 1, new Enchantment[0], b, inscription, num + 1, num + 1, num + 1);
         CustomTraderDatabase.dumpTags();
 
         StockInfo[] stock = CustomTraderDatabase.getStockFor(trader);
@@ -538,7 +637,8 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
                         (byte)rs.getInt(6),
                         rs.getInt(7),
                         Enchantment.parseEnchantments(rs.getString(8)),
-                        rs.getByte(12)),
+                        rs.getByte(12),
+                        rs.getString(13)),
                         rs.getInt(9),
                         rs.getInt(10),
                         rs.getInt(11));
@@ -555,6 +655,7 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
                 assertEquals(original.item.weight, dumped.item.weight);
                 assertArrayEquals(original.item.enchantments, dumped.item.enchantments);
                 assertEquals(original.item.aux, dumped.item.aux);
+                assertEquals(original.item.inscription, dumped.item.inscription);
                 assertEquals(original.maxNum, dumped.maxNum);
                 assertEquals(original.restockRate, dumped.restockRate);
                 assertEquals(original.restockInterval, dumped.restockInterval);
@@ -579,9 +680,10 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
                                         "restock_rate INTEGER," +
                                         "restock_interval INTEGER," +
                                         "aux INTEGER," +
+                                        "inscription TEXT NOT NULL DEFAULT ''," +
                                         "UNIQUE(tag, template_id, ql, material, rarity, weight, enchantments) ON CONFLICT REPLACE" +
                                         ");").execute();
-            PreparedStatement ps = db.prepareStatement("INSERT INTO tag_stock VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            PreparedStatement ps = db.prepareStatement("INSERT INTO tag_stock VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             ps.setString(1, "tag");
             ps.setInt(2, num);
             ps.setFloat(3, num);
@@ -594,6 +696,7 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
             ps.setInt(10, num);
             ps.setInt(11, num);
             ps.setByte(12, b);
+            ps.setString(13, "Testing");
             ps.execute();
         }
     }
@@ -602,6 +705,7 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
     void testLoadTagsLoadsSuccessfully() throws SQLException {
         int num = 6;
         byte b = 1;
+        String inscription = "Testing";
         Creature trader = factory.createNewCustomTrader("tag");
         CustomTraderDatabase.tagDumpDbString = "sqlite/tags.db";
         createTagsDump(num, b);
@@ -619,6 +723,7 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
         assertEquals(b, dumped.item.rarity);
         assertEquals(num, dumped.item.weight);
         assertEquals(b, dumped.item.aux);
+        assertEquals(inscription, dumped.item.inscription);
         assertEquals(num, dumped.maxNum);
         assertEquals(num, dumped.restockRate);
         assertEquals(num, dumped.restockInterval);
@@ -632,7 +737,7 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
         CustomTraderDatabase.tagDumpDbString = "sqlite/tags.db";
         createTagsDump(num, b);
 
-        CustomTraderDatabase.addStockItemTo("tag", num + 1, num + 1, num + 1, b, b, num + 1, new Enchantment[0], b, num + 1, num + 1, num + 1);
+        CustomTraderDatabase.addStockItemTo("tag", num + 1, num + 1, num + 1, b, b, num + 1, new Enchantment[0], b, "", num + 1, num + 1, num + 1);
         CustomTraderDatabase.loadTags();
 
         StockInfo[] stock = CustomTraderDatabase.getStockFor(trader);
@@ -661,7 +766,7 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
         byte b = 1;
         String tag = "myTag";
         Creature trader = factory.createNewCustomTrader(tag);
-        CustomTraderDatabase.addStockItemTo(tag, 1, num, num, b, b, num, new Enchantment[0], (byte)0, num, num, num);
+        CustomTraderDatabase.addStockItemTo(tag, 1, num, num, b, b, num, new Enchantment[0], (byte)0, "", num, num, num);
 
         assertEquals(CustomTraderDatabase.RestockTag.SUCCESS, CustomTraderDatabase.fullyStock(tag));
         assertEquals(num, trader.getInventory().getItemCount());
@@ -673,7 +778,7 @@ public class CustomTraderDatabaseTests extends CustomTraderTest {
         byte b = 1;
         String tag = "myTag";
         Creature trader = factory.createNewCustomTrader(tag);
-        CustomTraderDatabase.addStockItemTo(tag, 1, num, num, b, b, num, new Enchantment[0], (byte)0, num, num, num);
+        CustomTraderDatabase.addStockItemTo(tag, 1, num, num, b, b, num, new Enchantment[0], (byte)0, "", num, num, num);
 
         assertEquals(CustomTraderDatabase.RestockTag.NO_TAG_RECEIVED, CustomTraderDatabase.fullyStock(""));
         assertEquals(0, trader.getInventory().getItemCount());

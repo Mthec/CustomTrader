@@ -20,6 +20,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Objects;
 import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.wurmonline.server.questions.CustomTraderItemsConfigurationQuestion.ItemDefinitionStage.*;
 import static mod.wurmunlimited.Assert.*;
@@ -27,14 +29,17 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class CustomTraderItemsConfigurationQuestionTests extends CustomTraderTest {
+    private static final Pattern passthrough = Pattern.compile("passthrough\\{id=[\"']id[\"'];text=[\"']([\\d]+)[\"']}");
     private CustomTraderObjectsFactory factory;
     private Creature trader;
     private Player gm;
     private static final int templateIndex = 905;
+    private static final int paperTemplateIndex = 811;
 
     @Override
     @BeforeEach
     protected void setUp() throws Exception {
+        super.setUp();
         factory = new CustomTraderObjectsFactory();
         trader = factory.createNewCustomTrader();
         gm = factory.createNewPlayer();
@@ -53,6 +58,9 @@ public class CustomTraderItemsConfigurationQuestionTests extends CustomTraderTes
                 EligibleMaterials materials = new EligibleMaterials(template.itemTemplate);
                 ReflectionUtil.setPrivateField(question, CustomTraderItemsConfigurationQuestion.class.getDeclaredField("materials"), materials);
                 ReflectionUtil.setPrivateField(question, CustomTraderItemsConfigurationQuestion.class.getDeclaredField("details"), Details._default(materials.getIndexOf(template.itemTemplate.getMaterial()), template.itemTemplate.getWeightGrams()));
+                if (stage == ADVANCED) {
+                    ReflectionUtil.setPrivateField(question, CustomTraderItemsConfigurationQuestion.class.getDeclaredField("recipes"), new Recipes());
+                }
             }
             return question;
         } catch (NoSuchFieldException | IllegalAccessException e) {
@@ -67,7 +75,15 @@ public class CustomTraderItemsConfigurationQuestionTests extends CustomTraderTes
         properties.setProperty("rarity", "0");
         properties.setProperty("price", "1");
         properties.setProperty("weight", "1.2");
+
+        return properties;
+    }
+
+    private Properties getCorrectAdvancedDetails() {
+        Properties properties = new Properties();
         properties.setProperty("aux", "0");
+        properties.setProperty("inscription", "");
+
         return properties;
     }
 
@@ -87,6 +103,8 @@ public class CustomTraderItemsConfigurationQuestionTests extends CustomTraderTes
         assertEquals((byte)0, item.rarity);
         assertEquals(1, item.price);
         assertEquals(1200, item.weight);
+        assertEquals((byte)0, item.aux);
+        assertEquals("", item.inscription);
         assertEquals(0, info.restockRate);
         assertEquals(1, info.restockInterval);
         assertEquals(1, info.maxNum);
@@ -167,6 +185,20 @@ public class CustomTraderItemsConfigurationQuestionTests extends CustomTraderTes
     }
 
     @Test
+    void testNextScreenWithCorrectDETAILS_ADVANCED() {
+        Properties answers = getCorrectDetails();
+        answers.setProperty("ADVANCED", "true");
+        getQuestionAtStage(DETAILS).answer(answers);
+
+        assertEquals(1, factory.getCommunicator(gm).getBml().length);
+        assertEquals(0, CustomTraderDatabase.getStockFor(trader).length);
+
+        getQuestionAtStage(ADVANCED).sendQuestion();
+        assertEquals(2, factory.getCommunicator(gm).getBml().length);
+        assertThat(gm, bmlEqual());
+    }
+
+    @Test
     void testNextScreenWithCorrectENCHANTMENTS() {
         Properties answers = getCorrectDetails();
         answers.setProperty("RESTOCKING", "true");
@@ -208,6 +240,35 @@ public class CustomTraderItemsConfigurationQuestionTests extends CustomTraderTes
         question.answer(answers);
 
         assertEquals(3, factory.getCommunicator(gm).getBml().length);
+
+        StockInfo[] items = CustomTraderDatabase.getStockFor(trader);
+        assertEquals(1, items.length);
+
+        assertInfoCorrect(items[0]);
+    }
+
+    @Test
+    void testStockUpdatedWithCompleteAdvancedOrder() {
+        CustomTraderItemsConfigurationQuestion question = new CustomTraderItemsConfigurationQuestion(gm, trader, PaymentType.coin);
+        question.sendQuestion();
+        Properties answers = new Properties();
+        answers.setProperty("template", String.valueOf(templateIndex));
+        answers.setProperty("DETAILS", "true");
+        question.answer(answers);
+
+        answers = getCorrectDetails();
+        answers.setProperty("ADVANCED", "true");
+        question.answer(answers);
+
+        answers = getCorrectAdvancedDetails();
+        answers.setProperty("RESTOCKING", "true");
+        question.answer(answers);
+
+        answers = getCorrectRestocking();
+        answers.setProperty("END", "true");
+        question.answer(answers);
+
+        assertEquals(4, factory.getCommunicator(gm).getBml().length);
 
         StockInfo[] items = CustomTraderDatabase.getStockFor(trader);
         assertEquals(1, items.length);
@@ -479,20 +540,6 @@ public class CustomTraderItemsConfigurationQuestionTests extends CustomTraderTes
     }
 
     @Test
-    void testDETAILSAuxInvalidReshowsQuestion() {
-        Properties answers = getCorrectDetails();
-        answers.setProperty("aux", "abc");
-        answers.setProperty("RESTOCKING", "true");
-        CustomTraderItemsConfigurationQuestion question = getQuestionAtStage(DETAILS);
-        question.sendQuestion();
-        question.answer(answers);
-
-        assertEquals(2, factory.getCommunicator(gm).getBml().length);
-        assertThat(gm, bmlEqual());
-        assertThat(gm, receivedMessageContaining("Aux Byte was invalid."));
-    }
-
-    @Test
     void testENCHANTMENTSApplyPowerChanges() throws NoSuchFieldException, IllegalAccessException {
         Properties answers = new Properties();
         answers.setProperty("p0", "2.0");
@@ -612,6 +659,124 @@ public class CustomTraderItemsConfigurationQuestionTests extends CustomTraderTes
         assertEquals(spell, enchantment.spell);
         assertEquals(ql, enchantment.power);
         assertThat(gm, bmlNotEqual());
+    }
+
+    @Test
+    void testADVANCEDAuxInvalidReshowsQuestion() {
+        Properties answers = getCorrectDetails();
+        answers.setProperty("aux", "abc");
+        answers.setProperty("inscription", "");
+        answers.setProperty("RESTOCKING", "true");
+        CustomTraderItemsConfigurationQuestion question = getQuestionAtStage(ADVANCED);
+        question.sendQuestion();
+        question.answer(answers);
+
+        assertEquals(2, factory.getCommunicator(gm).getBml().length);
+        assertThat(gm, bmlEqual());
+        assertThat(gm, receivedMessageContaining("Aux Byte was invalid."));
+    }
+
+    @Test
+    void testADVANCEDQuestionDoesNotShowInscriptionIfNotPossible() throws NoSuchQuestionException {
+        CustomTraderItemsConfigurationQuestion question = getQuestionAtStage(ADVANCED);
+        question.sendQuestion();
+
+        assertFalse(factory.getCommunicator(gm).lastBmlContent.contains("id=\"inscription\""));
+    }
+
+    @Test
+    void testADVANCEDQuestionDoesNotShowInscriptionIfRecipe() throws NoSuchQuestionException, NoSuchFieldException, IllegalAccessException {
+        Question question = getQuestionAtStage(ADVANCED);
+        ReflectionUtil.setPrivateField(question, CustomTraderItemsConfigurationQuestion.class.getDeclaredField("template"), new Template(paperTemplateIndex, ""));
+        Properties answers = new Properties();
+        answers.setProperty("recipe", "1");
+        answers.setProperty("RESTOCKING", "true");
+        question.answer(answers);
+
+        question = Questions.getQuestion(getLastQuestionId());
+        answers = new Properties();
+        answers.setProperty("DETAILS", "true");
+        question.answer(answers);
+
+        question = Questions.getQuestion(getLastQuestionId());
+        answers = new Properties();
+        answers.setProperty("ADVANCED", "true");
+        question.answer(answers);
+
+        assertFalse(factory.getCommunicator(gm).lastBmlContent.contains("id=\"inscription\""));
+    }
+
+    @Test
+    void testADVANCEDQuestionShowsInscriptionIfPossible() throws NoSuchQuestionException, NoSuchFieldException, IllegalAccessException {
+        CustomTraderItemsConfigurationQuestion question = getQuestionAtStage(ADVANCED);
+        ReflectionUtil.setPrivateField(question, CustomTraderItemsConfigurationQuestion.class.getDeclaredField("template"), new Template(paperTemplateIndex, ""));
+        question.sendQuestion();
+
+        assertTrue(factory.getCommunicator(gm).lastBmlContent.contains("id=\"inscription\""));
+    }
+
+    private int getLastQuestionId() {
+        Matcher match = passthrough.matcher(factory.getCommunicator(gm).lastBmlContent);
+        if (!match.find()) {
+            throw new RuntimeException("No match found in " + factory.getCommunicator(gm).lastBmlContent);
+        }
+
+        return Integer.parseInt(match.group(1));
+    }
+
+    @Test
+    void testADVANCEDCorrectAdvancedDetails() throws NoSuchQuestionException {
+        byte aux = 1;
+        String inscription = "Testing";
+        Properties answers = new Properties();
+        answers.setProperty("aux", Byte.toString(aux));
+        answers.setProperty("inscription", inscription);
+        answers.setProperty("RESTOCKING", "true");
+        CustomTraderItemsConfigurationQuestion question = getQuestionAtStage(ADVANCED);
+        question.sendQuestion();
+        question.answer(answers);
+
+        Question question2 = Questions.getQuestion(getLastQuestionId());
+        answers = getCorrectRestocking();
+        answers.setProperty("END", "true");
+        question.answer(answers);
+
+        StockInfo[] stock = CustomTraderDatabase.getStockFor(trader);
+        assertEquals(1, stock.length);
+        assertEquals(aux, stock[0].item.aux);
+        assertEquals("", stock[0].item.inscription);
+    }
+
+    @Test
+    void testADVANCEDCorrectAdvancedDetailsPaper() throws NoSuchQuestionException {
+        byte aux = 2;
+        String inscription = "Testing";
+        Properties answers = new Properties();
+        answers.setProperty("template", Integer.toString(paperTemplateIndex));
+        answers.setProperty("DETAILS", "true");
+        getQuestionAtStage(TEMPLATE).answer(answers);
+
+        Question question = Questions.getQuestion(getLastQuestionId());
+        answers = getCorrectDetails();
+        answers.setProperty("ADVANCED", "true");
+        question.answer(answers);
+
+        question = Questions.getQuestion(getLastQuestionId());
+        answers = new Properties();
+        answers.setProperty("aux", Byte.toString(aux));
+        answers.setProperty("inscription", inscription);
+        answers.setProperty("RESTOCKING", "true");
+        question.answer(answers);
+
+        question = Questions.getQuestion(getLastQuestionId());
+        answers = getCorrectRestocking();
+        answers.setProperty("END", "true");
+        question.answer(answers);
+
+        StockInfo[] stock = CustomTraderDatabase.getStockFor(trader);
+        assertEquals(1, stock.length);
+        assertEquals(aux, stock[0].item.aux);
+        assertEquals(inscription, stock[0].item.inscription);
     }
 
     @Test

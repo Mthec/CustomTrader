@@ -5,13 +5,18 @@ import com.wurmonline.server.economy.Change;
 import com.wurmonline.server.items.ItemTemplate;
 import com.wurmonline.server.items.ItemTemplateFactory;
 import com.wurmonline.server.items.NoSuchTemplateException;
+import com.wurmonline.server.items.Recipe;
 import com.wurmonline.shared.util.MaterialUtilities;
 import mod.wurmunlimited.bml.BMLBuilder;
 import mod.wurmunlimited.npcs.customtrader.db.CustomTraderDatabase;
 import mod.wurmunlimited.npcs.customtrader.stock.StockInfo;
 
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -96,7 +101,11 @@ public class CustomTraderItemList extends CustomTraderQuestionExtension {
                                          return b;
                                      }
                                      StringBuilder sb = new StringBuilder();
-                                     MaterialUtilities.appendNameWithMaterialSuffix(sb, template.getName(), item.item.material);
+                                     if (item.item.aux == 1 && !item.item.inscription.isEmpty()) {
+                                         sb.append(recipeName(item.item.inscription));
+                                     } else {
+                                         MaterialUtilities.appendNameWithMaterialSuffix(sb, template.getName(), item.item.material);
+                                     }
 
                                      int rowNum = rowNumber.getAndIncrement();
                                      return b.label(sb.toString())
@@ -116,7 +125,7 @@ public class CustomTraderItemList extends CustomTraderQuestionExtension {
                                                   .button("cancel", "Cancel"))
                              .build();
 
-        getResponder().getCommunicator().sendBml(450, 400, true, true, bml, 200, 200, 200, title);
+        getResponder().getCommunicator().sendBml(500, 400, true, true, bml, 200, 200, 200, title);
     }
 
     private String timeFormat(int hours) {
@@ -140,5 +149,14 @@ public class CustomTraderItemList extends CustomTraderQuestionExtension {
                 return hours / month + "m";
             else
                 return "~" + hours / month + "m";
+    }
+
+    private String recipeName(String inscription) {
+        byte[] bytes = Base64.getDecoder().decode(inscription);
+        DataInputStream dis = new DataInputStream(new ByteArrayInputStream(bytes));
+        try {
+            return "recipe '" + new Recipe(dis).getName() + "'";
+        } catch (NoSuchTemplateException | IOException ignored) {}
+        return "recipe 'unknown'";
     }
 }

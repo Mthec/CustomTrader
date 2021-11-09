@@ -7,17 +7,20 @@ class Details {
     final int price;
     final int weight;
     final byte aux;
+    final String inscription;
 
-    Details(float ql, int materialIndex, byte rarity, int price, int weight, byte aux) {
+    // Note - Repurposed in AdvancedCurrencyQuestion, where aux stands in for material.  Not good, past Mthec.
+    Details(float ql, int materialIndex, byte rarity, int price, int weight, byte aux, String inscription) {
         this.ql = ql;
         this.materialIndex = materialIndex;
         this.rarity = rarity;
         this.price = price;
         this.weight = weight;
         this.aux = aux;
+        this.inscription = inscription;
     }
 
     static Details _default(int materialIndex, int weight) {
-        return new Details(20f, materialIndex, (byte)0, 1, weight, (byte)0);
+        return new Details(20f, materialIndex, (byte)0, 1, weight, (byte)0, "");
     }
 }
