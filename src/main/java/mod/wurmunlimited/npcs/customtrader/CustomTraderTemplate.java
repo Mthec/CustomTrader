@@ -46,10 +46,10 @@ public class CustomTraderTemplate implements ModCreature {
                 0f,
                 0f,
                 0f,
-                0.8f,
+                0f,
                 0,
                 new int[0],
-                3,
+                0,
                 0,
                 ItemMaterials.MATERIAL_MEAT_HUMAN
         );

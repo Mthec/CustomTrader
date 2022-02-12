@@ -109,8 +109,9 @@ public class CustomTraderItemsConfigurationQuestion extends CustomTraderQuestion
                 if (template.itemTemplate != null) {
                     materials = new EligibleMaterials(template.itemTemplate);
                     details = new Details(details.ql, materials.getIndexOf(template.itemTemplate.getMaterial()), details.rarity, details.price, template.itemTemplate.getWeightGrams(), details.aux, details.inscription);
-                } else
+                } else {
                     reshowStage = true;
+                }
                 break;
             case DETAILS:
                 float ql = details.ql;
