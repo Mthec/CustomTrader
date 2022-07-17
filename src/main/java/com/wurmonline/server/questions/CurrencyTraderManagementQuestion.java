@@ -46,7 +46,9 @@ public class CurrencyTraderManagementQuestion extends PlaceOrManageTraderQuestio
             String filter = getStringOrDefault("filter", "");
             template = new Template(0, filter);
 
-            sendQuestion();
+            CurrencyTraderManagementQuestion question = new CurrencyTraderManagementQuestion(responder, trader);
+            question.template = new Template(0, filter);
+            question.sendQuestion();
         } else if (wasSelected("confirm")) {
             checkSaveName(trader);
             parseCurrency();

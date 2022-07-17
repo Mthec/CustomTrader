@@ -524,4 +524,17 @@ public class CurrencyTraderManagementQuestionTests extends CustomTraderTest {
         assertThat(gm, didNotReceiveMessageContaining("got rid of"));
         assertThat(gm, didNotReceiveMessageContaining("fully stocked"));
     }
+
+    @Test
+    void testFilterSendsNewQuestion() throws NoSuchQuestionException {
+        Question question = new CurrencyTraderManagementQuestion(gm, trader);
+        question.sendQuestion();
+
+        Properties properties = new Properties();
+        properties.setProperty("do_filter", "true");
+        properties.setProperty("filter", "pickles");
+        question.answer(properties);
+
+        assertNotEquals(Questions.getQuestion(question.id + 1), question);
+    }
 }
