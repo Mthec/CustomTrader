@@ -8,6 +8,7 @@ import com.wurmonline.server.spells.Spells;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -17,6 +18,7 @@ public class Enchantment {
     public final Spell spell;
     public final String name;
     public final float power;
+    private static final Comparator<Enchantment> comparator = Comparator.comparing((Enchantment e) -> e.spell.number).thenComparing(e -> e.power);
 
     public Enchantment(Spell spell, float power) {
         this.spell = spell;
@@ -64,6 +66,7 @@ public class Enchantment {
             }
         }
 
+        enchantments.sort(comparator);
         return enchantments.toArray(new Enchantment[0]);
     }
 
@@ -77,6 +80,7 @@ public class Enchantment {
             }
         }
 
+        enchantments.sort(comparator);
         return enchantments.toArray(new Enchantment[0]);
     }
 
