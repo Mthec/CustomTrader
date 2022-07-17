@@ -1,9 +1,6 @@
 package com.wurmonline.server.creatures;
 
-import com.wurmonline.server.items.Item;
-import com.wurmonline.server.items.Materials;
-import com.wurmonline.server.items.Trade;
-import com.wurmonline.server.items.TradingWindow;
+import com.wurmonline.server.items.*;
 import com.wurmonline.server.questions.WeightHelper;
 import com.wurmonline.shared.util.MaterialUtilities;
 import mod.wurmunlimited.npcs.customtrader.Currency;
@@ -116,6 +113,7 @@ public class CurrencyTraderTradeHandler extends TradeHandler {
     void tradeChanged() {
         balanced = false;
         waiting = false;
+        ((CurrencyTradingWindow)trade.getTradingWindow(4)).getCreatureLogger(trader).info("Trade changed.");
     }
 
     @Override
