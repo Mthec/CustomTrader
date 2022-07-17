@@ -432,4 +432,25 @@ public class CurrencyTraderTradeHandlerTests extends CustomTraderTest {
         handler.balance();
         assertThat(player, receivedMessageContaining("0.07kg"));
     }
+
+    @Test
+    void testSatisfiedFalseOnWaiting() throws NoSuchFieldException, IllegalAccessException, CustomTraderDatabase.StockUpdateException {
+        CustomTraderDatabase.removeStockItemFrom(trader, CustomTraderDatabase.getStockFor(trader)[0]);
+        CustomTraderDatabase.addStockItemTo(trader, 5, 5, 2, (byte)0, (byte)0, 5, new Enchantment[0], (byte)0, "", 1, 1, 0);
+        CustomTraderDatabase.restock(trader);
+
+        resetTrade();
+        selectPrize();
+        Item item = factory.createNewItem(currency);
+        TradingWindow window = trade.getTradingWindow(2);
+        window.addItem(item);
+        window.addItem(factory.createNewItem(currency));
+
+        assertFalse((boolean)ReflectionUtil.getPrivateField(trade, BaseTrade.class.getDeclaredField("creatureTwoSatisfied")));
+        handler.balance();
+        assertTrue((boolean)ReflectionUtil.getPrivateField(trade, BaseTrade.class.getDeclaredField("creatureTwoSatisfied")));
+        trade.getTradingWindow(4).removeItem(item);
+        handler.balance();
+        assertFalse((boolean)ReflectionUtil.getPrivateField(trade, BaseTrade.class.getDeclaredField("creatureTwoSatisfied")));
+    }
 }
