@@ -27,6 +27,7 @@ import org.gotti.wurmunlimited.modsupport.actions.ModActions;
 import org.gotti.wurmunlimited.modsupport.creatures.ModCreatures;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.SQLException;
@@ -44,6 +45,7 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
     public ModelSetter modelSetter;
     private boolean preventDecay = true;
     private final CommandWaitTimer restockTimer = new CommandWaitTimer(TimeConstants.MINUTE_MILLIS);
+    private int maximumPowerTurn = 1;
 
     public CustomTraderMod() {
         mod = this;
@@ -65,6 +67,17 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
         String val = properties.getProperty("prevent_decay", "true");
         preventDecay = val != null && val.equals("true");
         namePrefix =  properties.getProperty("name_prefix", "Trader");
+        val = properties.getProperty("turn_to_player_max_power");
+        if (val != null && val.length() > 0) {
+            try {
+                maximumPowerTurn = Integer.parseInt(val);
+                if (maximumPowerTurn < 0)
+                    throw new NumberFormatException();
+            } catch (NumberFormatException e) {
+                logger.warning("Invalid turn_to_player_power option, falling back to default.");
+                maximumPowerTurn = 1;
+            }
+        }
     }
 
     @Override
@@ -96,6 +109,10 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
                 "parseCreatureCreationQuestion",
                 "(Lcom/wurmonline/server/questions/CreatureCreationQuestion;)V",
                 () -> this::creatureCreation);
+        manager.registerHook("com.wurmonline.server.behaviours.MethodsCreatures",
+                "initiateTrade",
+                "(Lcom/wurmonline/server/creatures/Creature;Lcom/wurmonline/server/creatures/Creature;)V",
+                () -> this::initiateTrade);
 
 
         TradeSetup.init(manager);
@@ -184,7 +201,6 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
             creature.getShop().setMoney(0);
         }
 
-        //noinspection SuspiciousInvocationHandlerImplementation
         return tradeCompleted;
     }
 
@@ -297,5 +313,20 @@ public class CustomTraderMod implements WurmServerMod, Configurable, PreInitable
                                                                      String.join(", ", tags) +
                                                                      ".");
         }
+    }
+
+    Object initiateTrade(Object o, Method method, Object[] args) throws InvocationTargetException, IllegalAccessException {
+        Creature performer = (Creature)args[0];
+        Creature other = (Creature)args[1];
+
+        if (!(other instanceof Player) && performer.getPower() <= maximumPowerTurn) {
+            other.turnTowardsCreature(performer);
+
+            try {
+                other.getStatus().savePosition(other.getWurmId(), false, other.getStatus().getZoneId(), true);
+            } catch (IOException ignored) {}
+        }
+
+        return method.invoke(o, args);
     }
 }
